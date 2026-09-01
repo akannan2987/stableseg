@@ -1,0 +1,79 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stableseg"
+version = "0.1.0"
+description = "A measurement-system audit for imaging biomarkers: how much does a number measured from a scan move when the patient has not changed?"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Abhilash Kannan" }]
+keywords = ["medical-imaging", "biomarker", "repeatability", "segmentation", "quality-assurance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+# The core engine deliberately needs no deep-learning framework.
+# Everything here installs from binary wheels on Windows, macOS and RHEL 8.
+dependencies = [
+    "numpy>=1.26,<3",
+    "scipy>=1.11",
+    "scikit-image>=0.22",
+    "nibabel>=5.2",
+    "SimpleITK>=2.3",
+    "pydicom>=2.4",
+    "pandas>=2.1",
+    "duckdb>=0.10",
+    "pydantic>=2.5",
+    "PyYAML>=6.0",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Deep-learning segmenter and MRI-physics perturbations (phase 5 onward).
+deep = ["torch>=2.2", "monai>=1.3", "torchio>=0.19"]
+# The interactive explorer (phase 7).
+app = ["streamlit>=1.32", "plotly>=5.18"]
+# Tooling for development: tests, linting, formatting.
+dev = ["pytest>=8.0", "pytest-cov>=4.1", "ruff>=0.4"]
+
+[project.scripts]
+stableseg = "stableseg.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/akannan2987/stableseg"
+Documentation = "https://github.com/akannan2987/stableseg/tree/master/docs"
+Changelog = "https://github.com/akannan2987/stableseg/blob/master/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+stableseg = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+    "slow: tests that take more than a few seconds (deselect with '-m \"not slow\"')",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+# E/F = errors and pyflakes, I = import sorting, B = common bugs, UP = modern syntax.
+select = ["E", "F", "I", "B", "UP"]
+# typer.Option/Argument in defaults is the documented typer style, so B008 is switched off.
+ignore = ["B008"]

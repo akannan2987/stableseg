@@ -1,0 +1,19 @@
+# StableSeg run config: generate the synthetic phantom dataset.
+# Every field is validated by src/stableseg/config.py. Check a file without
+# generating anything with:   stableseg validate-config configs/phantom.yaml
+
+name: phantom-smoke
+
+data:
+  source: phantom            # 'phantom' = generate; 'nifti_folder' = read real files
+  root: data/phantom         # images/ and labels/ are written here
+  phantom:
+    n_cases: 8               # small on purpose: the whole thing runs in seconds
+    shape: [48, 64, 48]      # voxels (x, y, z)
+    spacing_mm: [1.0, 1.0, 1.0]
+    noise_sd: 0.05
+    seed: 42                 # same seed, same phantoms, on any machine
+
+output:
+  root: runs
+  run_name: phantom-smoke    # provenance lands in runs/phantom-smoke/run.json

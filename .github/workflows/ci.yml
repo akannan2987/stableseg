@@ -1,0 +1,53 @@
+# Continuous integration: every push and pull request is installed and tested
+# on the three operating systems the project promises to support.
+#
+# Windows and macOS are hosted runners. There is no hosted RHEL 8 runner; the
+# Ubuntu job covers Linux, and docs/01-setup-rhel8.md is the tested RHEL path.
+
+name: ci
+
+on:
+  push:
+    branches: [master, beta, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, beta, develop]
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install (pinned)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.lock
+          python -m pip install -e . --no-deps
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: ruff format --check src tests
+
+      - name: Test
+        run: pytest -q --cov=stableseg --cov-report=term-missing
+
+      - name: Smoke-run the CLI
+        run: |
+          stableseg version
+          stableseg validate-config configs/phantom.yaml
+          stableseg phantom --config configs/phantom.yaml
+          stableseg describe data/phantom/images/phantom_000.nii.gz
