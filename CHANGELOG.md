@@ -12,7 +12,7 @@ Planned for 0.2.0: real hippocampus MRI ingestion, the perturbation bank, the
 classical segmenter, biomarker extraction, and the first repeatability
 statistics. See `docs/05-roadmap.md`.
 
-## [0.1.0] - 2026-09-01
+## [0.1.0] - 2026-09-02
 
 First public release: a runnable skeleton with the full documentation set.
 

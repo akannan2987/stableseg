@@ -60,6 +60,7 @@ the document is wrong and that is a defect worth fixing immediately.
 **Part III — The build**
 7. [Phase 1 — the skeleton ✅](#7-phase-1--the-skeleton-)
 7b. [Phase 1b — the R toolchain ✅](#7b-phase-1b--the-r-toolchain-)
+7c. [Phase 1c — the first release ✅](#7c-phase-1c--the-first-release-)
 8. [Phase 2 — real data ⬜](#8-phase-2--real-data-)
 9. [Phase 3 — the perturbation bank ⬜](#9-phase-3--the-perturbation-bank-)
 10. [Phase 4 — segment, measure, store ⬜](#10-phase-4--segment-measure-store-)
@@ -731,6 +732,67 @@ git switch master
 git pull --ff-only origin master
 git switch develop
 ```
+
+---
+
+## 7c. Phase 1c — the first release ✅
+
+**Status: done.** Version 0.1.0 is tagged and published.
+
+### What it is
+
+A **release**: this exact state of the project, frozen under the name
+`v0.1.0`, installable and citable forever, regardless of what changes
+afterwards. The everyday version: the project is a document you keep editing;
+a release is printing a copy, writing "edition 1" on the cover, and putting it
+on the shelf.
+
+### Why release something this early
+
+Because 0.1.0 is a clean, describable boundary — *the skeleton, complete and
+documented, before real data arrives* — and phase 2 changes the project's
+shape. Without a tag, this state would only be reconstructable by digging
+through commit history. With one, anyone can install it with a single command
+and reproduce the reference number against it.
+
+It is also the cheapest possible rehearsal of a professional habit. Releasing
+badly is easy; the tutorial below is mostly a checklist of the small things
+that make a release trustworthy: version strings that provably agree, a
+changelog written as you went rather than reconstructed, green checks before
+tagging, and — the step almost everyone skips — installing the release into a
+clean environment to prove the claim it makes.
+
+### What you will understand afterwards
+
+What a tag is and how it differs from a branch. What the three numbers in a
+version promise, and why staying at `0.x` is itself a statement. What a GitHub
+Release adds on top of a tag. Why a published tag is never deleted, only
+superseded.
+
+### 🔗 The detail
+
+[`docs/04-phase-tutorials/phase-01c-first-release.md`](docs/04-phase-tutorials/phase-01c-first-release.md)
+— the five-point pre-release checklist, the exact commands with expected
+output, the GitHub Release steps, and the install-from-tag verification.
+
+### How you know it worked
+
+```bash
+git tag                    # lists: v0.1.0
+```
+
+And from any machine anywhere:
+
+```bash
+pip install "git+https://github.com/akannan2987/stableseg.git@v0.1.0"
+stableseg phantom          # ends with: "mean_true_volume_mm3": 2269.75
+```
+
+### Commit it
+
+The git block for this phase is the one time `--tags` is required; it is
+spelled out at the end of the
+[release tutorial](docs/04-phase-tutorials/phase-01c-first-release.md).
 
 ---
 

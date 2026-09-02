@@ -3,7 +3,7 @@
 <!-- Cover image goes here once the explorer exists:
 [![StableSeg](docs/img/cover_stableseg.png)](docs/img/cover_stableseg.png) -->
 
-**▶ Live explorer — coming with the app phase** · **v0.1.0**
+**▶ Live explorer — coming with the app phase** · **v0.1.0** · [Release notes](CHANGELOG.md)
 · ![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
 ![NIfTI](https://img.shields.io/badge/formats-NIfTI%20%7C%20DICOM-5C6BC0)
 ![tests](https://img.shields.io/badge/tests-36%20passing-brightgreen?logo=pytest&logoColor=white)
@@ -198,6 +198,7 @@ what it means. Nothing is shown before it exists.*
 | — | [Glossary — every term in plain words](docs/00-glossary.md) | 🔨 living document |
 | 0 | [**Setup — Windows**](docs/01-setup-windows.md) · [**macOS**](docs/01-setup-macos.md) · [**RHEL 8**](docs/01-setup-rhel8.md) | ✅ |
 | 1b | [R toolchain check + R/RStudio setup](docs/01-setup-r.md) | ✅ |
+| 1c | [First release: tagging v0.1.0](docs/04-phase-tutorials/phase-01c-first-release.md) | ✅ |
 | 0 | [Architecture — how it all fits together](docs/02-architecture.md) | ✅ |
 | 0 | [Git workflow — master / beta / develop](docs/03-git-workflow.md) | ✅ |
 | 1 | [Skeleton: package, config, storage, phantoms, CLI, tests, CI](docs/04-phase-tutorials/phase-01-skeleton.md) | ✅ |
