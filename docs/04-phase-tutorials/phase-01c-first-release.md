@@ -101,7 +101,7 @@ ruff check .
 pytest -q
 python scripts/preflight.py
 ```
-Expected: `All checks passed!`, `36 passed`, `Clear to commit and push.`
+Expected: `All checks passed!`, `38 passed`, `Clear to commit and push.`
 
 And if R is installed:
 ```bash
@@ -195,13 +195,16 @@ folder, **without** your project or your virtual environment:
 cd /tmp                                # Windows: cd $env:TEMP
 python3.13 -m venv relcheck            # RHEL 8: python3.12 · Windows: py -3.13 -m venv relcheck
 source relcheck/bin/activate           # Windows: .\relcheck\Scripts\Activate.ps1
-python -m pip -q install "git+https://github.com/akannan2987/stableseg.git@v0.1.0"
+python -m pip -q install "git+https://github.com/akannan2987/stableseg.git@v0.1.1"
 stableseg version
 stableseg phantom
 ```
 
-Expected: `{ "stableseg": "0.1.0" }`, then a phantom run ending in
-`"mean_true_volume_mm3": 2269.75`.
+Expected: `{ "stableseg": "0.1.1" }`, then a phantom run ending in
+`"mean_true_volume_mm3": 2269.75`, with `data/` and `runs/` created in the
+folder you ran from. (The command shows `v0.1.1` rather than `v0.1.0` for a
+reason section 7b explains: the first run of this very check caught a release
+bug.)
 
 Read what just happened: pip fetched **the tag** — not the latest code, not
 your folder — built it, and installed it into a fresh environment, and the
@@ -218,6 +221,34 @@ source .venv/bin/activate              # Windows: .\.venv\Scripts\Activate.ps1
 (This install-from-tag route uses the pinned-compatible versions from
 `pyproject.toml` ranges rather than `requirements.lock`, which is fine for a
 smoke test; the lock file remains the reference for development installs.)
+
+## 7b. What this verification caught, the first time it was run
+
+Worth recording, because it is the whole argument for section 7 in one story.
+
+Running exactly the check above against the freshly published `v0.1.0` failed:
+
+```
+Invalid value for '--config' / '-c': Path 'configs/phantom.yaml' does not exist.
+```
+
+The command's default configuration was a relative path into the repository.
+Every test passed and every documented example worked, because both always ran
+inside a project checkout, where that file exists. An installed package
+carries code, not the repository's folders — so the very first run on a
+machine that was not a checkout failed on the spot.
+
+The response followed section 8's rule rather than fighting it: the published
+tag stayed exactly where it was, and **v0.1.1** was released the same day with
+the fix, two regression tests that run the command from an empty folder the
+way an installed user would, and this note. The changelog entry for 0.1.1
+records the details.
+
+Two lessons that outlast the bug. First, a test suite that always runs inside
+the checkout silently assumes the checkout; at least one test should stand
+where an installed user stands. Second, the install-from-tag step is not
+ceremony — it is the only check in the whole suite that stood outside the
+project, and it caught what everything inside could not see.
 
 ## 8. What could go wrong
 

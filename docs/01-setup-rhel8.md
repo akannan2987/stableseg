@@ -284,7 +284,7 @@ Expected: `0.1.0`
 ```bash
 pytest -q
 ```
-Expected: `36 passed in 0.6s`.
+Expected: `38 passed in 0.6s`.
 
 > ### What is a "phantom", and why are we making one?
 >

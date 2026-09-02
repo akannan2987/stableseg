@@ -50,7 +50,7 @@ and Linux with Python 3.12 or 3.13.
 | The first biomarker: label volume in cubic millimetres | `io.label_volume_mm3` |
 | Deterministic synthetic phantom generator with known true volumes | `phantom.py` |
 | Command-line tool: `version`, `describe`, `phantom`, `validate-config` | `cli.py` |
-| 36 automated checks, no download needed, under a second | `tests/` |
+| 38 automated checks, no download needed, under a second | `tests/` |
 | Automated checks on 3 operating systems × 2 Python versions | `.github/workflows/ci.yml` |
 | Pre-push safety check for credentials, oversized files, private paths | `scripts/preflight.py` |
 | The complete beginner tutorial | `docs/` |
@@ -120,8 +120,20 @@ a laptop, with no neural network involved.
 | **5 · Repeatability statistics** | The agreement statistics, each implemented explicitly and checked against a worked example: intraclass correlation, within-subject coefficient of variation, Bland–Altman limits, repeatability coefficient, minimum detectable change, bootstrap confidence intervals. Plus the sample-size calculator. An independent cross-check of the intraclass correlation written in R must agree to four decimal places. | The verdict. This is where the project answers its own question. |
 
 **Also in 0.2.0:** a CT perturbation profile, so the modality-aware design is
-demonstrated rather than merely claimed; and a container image, so the whole
-environment can be reproduced anywhere in one command.
+demonstrated rather than merely claimed; a container image, so the whole
+environment can be reproduced anywhere in one command; and `QUERY_COOKBOOK.md`
+— tested, explained SQL against the results database, including multi-part
+queries, following the same convention as the sibling projects.
+
+**On R and RStudio.** The statistics phase adds an `R/` folder, `renv` for
+exact R package versions, and an independent implementation of the agreement
+statistics using the established R packages (`irr`, `psych`, `blandr`). The two
+implementations must agree to four decimal places. This is not duplicated work
+for its own sake: two unrelated implementations agreeing is a far stronger
+check on a formula than one careful implementation, and it is a check most
+projects skip. RStudio is the natural editor for that side and runs on all
+three supported systems. The R side stays optional throughout, so the project
+remains fully usable Python-only.
 
 **Honest expectation:** four weekends, and the statistics phase is the hard
 one. Not because the formulas are difficult — they are arithmetic — but

@@ -11,6 +11,6 @@ called them. Keeping that direction strict is what lets the core be reused
 without rewriting it.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = ["__version__"]

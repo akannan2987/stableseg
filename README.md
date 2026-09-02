@@ -6,7 +6,7 @@
 **▶ Live explorer — coming with the app phase** · **v0.1.0** · [Release notes](CHANGELOG.md)
 · ![Python](https://img.shields.io/badge/Python-3.12%20%7C%203.13-3776AB?logo=python&logoColor=white)
 ![NIfTI](https://img.shields.io/badge/formats-NIfTI%20%7C%20DICOM-5C6BC0)
-![tests](https://img.shields.io/badge/tests-36%20passing-brightgreen?logo=pytest&logoColor=white)
+![tests](https://img.shields.io/badge/tests-38%20passing-brightgreen?logo=pytest&logoColor=white)
 ![ci](https://img.shields.io/badge/CI-Windows%20%7C%20macOS%20%7C%20Linux%20%C3%97%20py3.12%2F3.13-informational?logo=githubactions&logoColor=white)
 ![data](https://img.shields.io/badge/data-MSD%20hippocampus%20%2B%20synthetic%20phantoms-6f42c1)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -175,7 +175,7 @@ what it means. Nothing is shown before it exists.*
   rule (`cli → api → core`), a validated config format, a storage
   abstraction with provenance stamps, geometry-preserving NIfTI I/O, the
   first biomarker (label volume in mm³), a deterministic phantom generator,
-  a 4-command CLI, 36 tests that run in under a second with no download, and
+  a 4-command CLI, 38 tests that run in under a second with no download, and
   CI on three operating systems. The figure above is its output.
 - **Phase 1b — R toolchain:** ✅ a dependency-free R script that reads the
   generated manifest and recomputes a value the Python side published — 2269.75
@@ -350,7 +350,7 @@ python --version                # must print 3.12.x or 3.13.x
 python -m pip install --upgrade pip
 python -m pip install -r requirements.lock
 python -m pip install -e . --no-deps
-pytest -q                                   # expect: 36 passed
+pytest -q                                   # expect: 38 passed
 stableseg phantom                           # writes data/phantom/ and runs/phantom-smoke/
 stableseg describe data/phantom/images/phantom_000.nii.gz
 ```

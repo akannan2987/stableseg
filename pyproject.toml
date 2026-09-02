@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stableseg"
-version = "0.1.0"
+version = "0.1.1"
 description = "A measurement-system audit for imaging biomarkers: how much does a number measured from a scan move when the patient has not changed?"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"

@@ -12,6 +12,26 @@ Planned for 0.2.0: real hippocampus MRI ingestion, the perturbation bank, the
 classical segmenter, biomarker extraction, and the first repeatability
 statistics. See `docs/05-roadmap.md`.
 
+## [0.1.1] - 2026-09-02
+
+### Fixed
+- `stableseg phantom` failed on installed copies with
+  `Path 'configs/phantom.yaml' does not exist`. The default config was a
+  relative path into the repository, which exists in a project checkout and
+  nowhere else - so every test passed while `pip install` followed by
+  `stableseg phantom` failed on any other machine. The command now resolves
+  its configuration in order: an explicit `--config` path; else
+  `configs/phantom.yaml` if present in the current folder (the developer
+  case, keeping every documented command and output unchanged); else built-in
+  defaults, which are verified identical to the shipped config file. Found by
+  running the v0.1.0 release-verification step - installing from the tag into
+  a clean environment - which is exactly what that step exists to catch.
+
+### Added
+- Two regression tests that run the command from an empty folder the way an
+  installed user would, and that confirm a local config file still takes
+  precedence over the built-in defaults.
+
 ## [0.1.0] - 2026-09-02
 
 First public release: a runnable skeleton with the full documentation set.
@@ -27,7 +47,7 @@ First public release: a runnable skeleton with the full documentation set.
 - Deterministic synthetic phantom generator (`phantom.py`) writing NIfTI
   images, labels and a manifest with known true volumes.
 - Command-line interface: `version`, `describe`, `phantom`, `validate-config`.
-- Test suite (36 tests) that needs no download, including checks that the
+- Test suite (38 tests) that needs no download, including checks that the
   declared Python range matches what the pinned dependencies actually require.
 - `scripts/preflight.py`: a pre-push safety check for credentials, oversized
   files, force-added ignored paths, absolute home paths and mixed line
@@ -60,5 +80,6 @@ First public release: a runnable skeleton with the full documentation set.
   On macOS and Windows, install 3.13 (python.org no longer ships installers
   for 3.12); on RHEL 8, install 3.12 from AppStream.
 
-[Unreleased]: https://github.com/akannan2987/stableseg/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/akannan2987/stableseg/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/akannan2987/stableseg/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/akannan2987/stableseg/releases/tag/v0.1.0

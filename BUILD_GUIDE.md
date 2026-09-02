@@ -449,7 +449,7 @@ stableseg phantom
 stableseg describe data/phantom/images/phantom_000.nii.gz
 ```
 
-Expected, in order: `36 passed`, then `{ "stableseg": "0.1.0" }`, then a block
+Expected, in order: `38 passed`, then `{ "stableseg": "0.1.0" }`, then a block
 containing `"mean_true_volume_mm3": 2269.75`, then a description of one file.
 
 Taking the third one on its own:
@@ -589,7 +589,7 @@ The frame everything else hangs on. Nothing here measures a hippocampus.
 - **File loading** that never separates the numbers from their physical size
 - A **phantom generator**, so tests need no download
 - A **command-line tool** and a **function layer** underneath it
-- **36 automated checks**, running in under a second
+- **38 automated checks**, running in under a second
 - **Automated verification** on six platform combinations, on every push
 
 ### Why this first, and not the interesting part
@@ -622,7 +622,7 @@ automated verification does on every push.
 ### How you know it worked
 
 ```bash
-pytest -q                        # 36 passed
+pytest -q                        # 38 passed
 stableseg phantom                # mean_true_volume_mm3: 2269.75
 python scripts/preflight.py      # Clear to commit and push.
 ```
@@ -737,7 +737,8 @@ git switch develop
 
 ## 7c. Phase 1c — the first release ✅
 
-**Status: done.** Version 0.1.0 is tagged and published.
+**Status: done.** Version 0.1.0 is tagged and published — and so is v0.1.1,
+released the same day, which is itself part of the lesson (below).
 
 ### What it is
 
@@ -778,15 +779,29 @@ output, the GitHub Release steps, and the install-from-tag verification.
 ### How you know it worked
 
 ```bash
-git tag                    # lists: v0.1.0
+git tag                    # lists: v0.1.0, v0.1.1
 ```
 
 And from any machine anywhere:
 
 ```bash
-pip install "git+https://github.com/akannan2987/stableseg.git@v0.1.0"
+pip install "git+https://github.com/akannan2987/stableseg.git@v0.1.1"
 stableseg phantom          # ends with: "mean_true_volume_mm3": 2269.75
 ```
+
+### What actually happened, honestly
+
+The verification step caught a real bug. Installing `v0.1.0` into a clean
+environment and running `stableseg phantom` failed: the command's default
+configuration pointed at a file that exists in a project checkout and nowhere
+else. Every test had passed, because every test ran inside the checkout.
+
+Per the tutorial's own rule — a published tag is never deleted — `v0.1.0`
+stands as released, and `v0.1.1` fixes the defect, adds regression tests that
+run the command from an empty folder the way an installed user would, and
+records the story. The install-from-tag check was the only check standing
+outside the project, and it caught what everything inside could not see. That
+is why it is in the checklist.
 
 ### Commit it
 

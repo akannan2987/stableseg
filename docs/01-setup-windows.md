@@ -297,7 +297,7 @@ Expected: `0.1.0`
 ```powershell
 pytest -q
 ```
-Expected: `36 passed in 0.6s` (the time varies).
+Expected: `38 passed in 0.6s` (the time varies).
 
 ```powershell
 stableseg version

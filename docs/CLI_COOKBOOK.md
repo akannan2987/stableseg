@@ -500,7 +500,7 @@ pytest -q                        # run every automated check
 ```
 16 files left unchanged
 All checks passed!
-36 passed in 0.6s
+38 passed in 0.6s
 ```
 
 **What each is for.** `ruff format` rewrites files to one style, so nobody

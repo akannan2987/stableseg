@@ -5,7 +5,7 @@
 **Prerequisites:** your OS setup guide completed (Python 3.12 or 3.13, Git, VS Code, a virtual environment that activates), and `03-git-workflow.md` sections 1–3.
 **Learning goal:** after this phase you understand what an installable Python package is and why the code lives in `src/`; what a validated config is and why every run is a file; what a storage abstraction buys you; how a 3-D image carries its geometry; how a deterministic generator works; how a command-line tool wraps plain functions; what a unit test is; and what continuous integration does on every push.
 **Time:** about 2 hours reading and typing, split into three sessions of 40 minutes if needed. Each section ends at a point where everything still works.
-**Checkpoint:** `pytest -q` prints `36 passed`; `stableseg phantom` writes eight phantom files and a `run.json`; the CI badge on GitHub turns green on all three operating systems.
+**Checkpoint:** `pytest -q` prints `38 passed`; `stableseg phantom` writes eight phantom files and a `run.json`; the CI badge on GitHub turns green on all three operating systems.
 
 ---
 
@@ -281,7 +281,7 @@ A tiny program that runs a piece of your code with a known input and asserts the
 ```bash
 pytest -q
 ```
-Expected: `36 passed in 0.5s` (time varies). `-q` is quiet; drop it to see each test's name. `pytest -q --cov=stableseg --cov-report=term-missing` adds a coverage table: which lines the tests exercised.
+Expected: `38 passed in 0.5s` (time varies). `-q` is quiet; drop it to see each test's name. `pytest -q --cov=stableseg --cov-report=term-missing` adds a coverage table: which lines the tests exercised.
 
 Break something on purpose: in `phantom.py`, change `label[head] = 1` to `label[head] = 3`. Run `pytest -q`. Expected: `test_labels_are_1_and_2_and_non_empty` fails with `assert {0, 2, 3} == {0, 1, 2}`. Put it back. That is the safety net doing its job.
 
@@ -330,7 +330,7 @@ You are done with phase 1 when all of these are true:
 - [ ] `stableseg phantom` prints `"mean_true_volume_mm3": 2269.75`
 - [ ] `stableseg describe data/phantom/images/phantom_000.nii.gz` prints shape `[48, 64, 48]`
 - [ ] `ruff check .` prints `All checks passed!` and `ruff format --check src tests` prints `... already formatted`
-- [ ] `pytest -q` prints `36 passed`
+- [ ] `pytest -q` prints `38 passed`
 - [ ] after the git block below, GitHub's Actions tab shows three green jobs
 
 ---

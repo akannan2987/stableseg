@@ -276,7 +276,7 @@ Expected: `0.1.0`
 ```bash
 pytest -q
 ```
-Expected: `36 passed in 0.6s` (time varies).
+Expected: `38 passed in 0.6s` (time varies).
 
 ```bash
 stableseg version
