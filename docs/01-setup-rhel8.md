@@ -1,6 +1,6 @@
 # 01 · Setup on RHEL 8 (and Rocky / Alma Linux 8), from a blank machine
 
-[← START HERE](../START-HERE.md) · [README](../README.md) · [Glossary](00-glossary.md)
+[← Build guide](../BUILD_GUIDE.md) · [README](../README.md) · [Glossary](00-glossary.md)
 
 **Prerequisites:** a Red Hat Enterprise Linux 8 machine (or a Rocky Linux 8 /
 AlmaLinux 8 clone), shell access, and `sudo` rights for the install steps.

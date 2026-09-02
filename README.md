@@ -16,10 +16,15 @@
 has not changed at all? StableSeg measures that, for segmentation-based
 imaging biomarkers, and reports it in the language a clinical trial needs.**
 
-### ▶ New here? Read [`START-HERE.md`](START-HERE.md) first.
+### ▶ New here? Open [**`BUILD_GUIDE.md`**](BUILD_GUIDE.md).
 
-It is five numbered steps from a blank machine to a working install, about 45
-minutes. Everything else on this page assumes those steps are done.
+One document, start to finish: what this project is and why anyone would want
+it, the ideas you need first, installing from a blank machine in about 45
+minutes, then every build phase in order with the reasoning behind that order —
+linking out to the detailed guide for each step. It is kept current as the
+project changes.
+
+**If you read one thing, read that.** This page is the summary.
 
 > Every term used anywhere in this repo, medical or technical, is defined in
 > plain language in [`docs/00-glossary.md`](docs/00-glossary.md). If a word
@@ -29,7 +34,7 @@ minutes. Everything else on this page assumes those steps are done.
 
 ## Contents
 
-- [**START HERE — install and run in 45 minutes**](START-HERE.md)
+- [**BUILD GUIDE — the whole project, start here**](BUILD_GUIDE.md)
 - [What is an imaging biomarker?](#what-is-an-imaging-biomarker-start-here)
 - [The problem this project tackles](#the-problem-this-project-tackles)
 - [How it works](#how-it-works)
@@ -172,6 +177,10 @@ what it means. Nothing is shown before it exists.*
   first biomarker (label volume in mm³), a deterministic phantom generator,
   a 4-command CLI, 36 tests that run in under a second with no download, and
   CI on three operating systems. The figure above is its output.
+- **Phase 1b — R toolchain:** ✅ a dependency-free R script that reads the
+  generated manifest and recomputes a value the Python side published — 2269.75
+  from both, independently. Verifies R installs and runs on all three systems
+  before the statistics phase depends on it.
 - **Phase 2 — Real data:** *(pending)* the hippocampus MRI lands, with a
   DICOM reader tested on a synthetic series.
 - **Phase 3 — Perturbation bank:** *(pending)*
@@ -185,8 +194,10 @@ what it means. Nothing is shown before it exists.*
 
 | Phase | Guide | Status |
 |---|---|---|
+| — | [Build guide — the whole journey, day zero to finished](BUILD_GUIDE.md) | 🔨 living document |
 | — | [Glossary — every term in plain words](docs/00-glossary.md) | 🔨 living document |
 | 0 | [**Setup — Windows**](docs/01-setup-windows.md) · [**macOS**](docs/01-setup-macos.md) · [**RHEL 8**](docs/01-setup-rhel8.md) | ✅ |
+| 1b | [R toolchain check + R/RStudio setup](docs/01-setup-r.md) | ✅ |
 | 0 | [Architecture — how it all fits together](docs/02-architecture.md) | ✅ |
 | 0 | [Git workflow — master / beta / develop](docs/03-git-workflow.md) | ✅ |
 | 1 | [Skeleton: package, config, storage, phantoms, CLI, tests, CI](docs/04-phase-tutorials/phase-01-skeleton.md) | ✅ |
@@ -207,8 +218,10 @@ term defined and every command shown with its expected output.
 
 | # | Document | What you learn |
 |---|---|---|
+| — | [**Build guide**](BUILD_GUIDE.md) | **The spine — start here.** Day zero to finished tool: installing, every phase, the reasoning, and where each detail lives |
 | 00 | [Glossary](docs/00-glossary.md) | Every term, plain language, with an everyday analogy |
 | 01 | [Setup: Windows](docs/01-setup-windows.md) / [macOS](docs/01-setup-macos.md) / [RHEL 8](docs/01-setup-rhel8.md) | Blank machine → working workshop: Python, Git, a virtual environment, the verification habit |
+| 01 | [Setup: R and RStudio](docs/01-setup-r.md) | Optional. Why a Python project uses R, and the toolchain check |
 | 02 | [Architecture](docs/02-architecture.md) | Backend / frontend / database in plain words; the nine boxes and why each exists |
 | 03 | [Git workflow](docs/03-git-workflow.md) | Save-game for code; the `master`/`beta`/`develop` model step by step |
 | 04 | [Phase tutorials](docs/04-phase-tutorials/) | One file per build phase: goal, why, exact steps, checkpoint, what could go wrong, git block |
@@ -250,7 +263,7 @@ The short version; the reasoned version, with the dependency order explained, is
 
 ```
 stableseg/
-├── START-HERE.md                  ← read this first: blank machine → working install
+├── BUILD_GUIDE.md                 ← read this first: the whole project, day zero → finished
 ├── README.md                      ← you are here
 ├── CHANGELOG.md                   ← release notes, Keep-a-Changelog format
 ├── CONTRIBUTING.md                ← branch model, release flow, review norms
@@ -262,6 +275,8 @@ stableseg/
 ├── .github/workflows/ci.yml       ← tests on Windows, macOS, Ubuntu on every push
 ├── configs/
 │   └── phantom.yaml               ← a complete run config: generate phantoms
+├── R/
+│   └── verify_setup.R             ← proves the R toolchain works, before phase 5 needs it
 ├── scripts/
 │   └── preflight.py               ← pre-push safety check: secrets, big files, private paths
 ├── src/stableseg/                 ← the package (src layout: importable only when installed)
@@ -285,6 +300,7 @@ stableseg/
 ├── docs/                          ← the tutorial (the repo IS the tutorial)
 │   ├── 00-glossary.md             ← every term, plain language, with analogies
 │   ├── 01-setup-windows.md · 01-setup-macos.md · 01-setup-rhel8.md   ← blank machine → running
+│   ├── 01-setup-r.md              ← optional: R and RStudio, the cross-check toolchain
 │   ├── 02-architecture.md
 │   ├── 03-git-workflow.md
 │   ├── 04-phase-tutorials/phase-01-skeleton.md   (one file per phase)
@@ -304,10 +320,14 @@ stableseg/
 | `configs/` | Every run is a YAML file here. Reproducing a result means pointing at the same file. |
 | `tests/` | The safety net. Grows every phase. |
 | `scripts/` | Repository tooling that is not part of the package. Run before pushing. |
+| `R/` | The verification side. R checks the statistics independently from phase 5. |
 | `docs/` | The teaching layer. Numbered to match the build order. |
 | `data/`, `runs/` | Inputs and outputs. Regenerated by code, never committed. |
 
 ## How to run
+
+Full walkthrough for a blank machine: [`BUILD_GUIDE.md`](BUILD_GUIDE.md),
+sections 4–5. The short version:
 
 **Requires Python 3.12 or 3.13.** Not 3.11 (the pinned `numpy` and `scipy`
 refuse to install there), not 3.14 (unverified against the imaging stack). The

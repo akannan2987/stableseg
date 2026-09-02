@@ -1,6 +1,6 @@
 # 00 · Glossary
 
-[← START HERE](../START-HERE.md) · [README](../README.md) · [Architecture](02-architecture.md)
+[← Build guide](../BUILD_GUIDE.md) · [README](../README.md) · [Architecture](02-architecture.md)
 
 Every term used anywhere in this project, in plain language, with an everyday
 comparison where one helps. Keep this open while you read anything else. If a

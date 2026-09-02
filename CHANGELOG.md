@@ -33,8 +33,16 @@ First public release: a runnable skeleton with the full documentation set.
   files, force-added ignored paths, absolute home paths and mixed line
   endings, with explicit per-line and per-file escape markers.
 - Continuous integration on Windows, macOS and Ubuntu with pinned dependencies.
-- Documentation set: `START-HERE.md`, architecture, glossary, per-OS setup
+- Documentation set: architecture, glossary, per-OS setup
   guides (Windows, macOS, RHEL 8), git workflow and phase tutorials.
+- Build guide (`BUILD_GUIDE.md`): a single living document covering the project
+  from day zero to the finished tool — installing, every build phase, and the
+  reasoning behind the order — linking out to the detailed documents rather
+  than repeating them. The one document to open first.
+- R toolchain verification (`R/verify_setup.R`) and its setup guide
+  (`docs/01-setup-r.md`). Reads the generated manifest with base R only, no
+  packages, and recomputes a value the Python side published, so the
+  cross-language toolchain is proven before the statistics phase relies on it.
 - Roadmap (`docs/05-roadmap.md`) stating the build order and the dependency
   reasoning behind it.
 - Product and technology roadmap (`docs/06-product-and-technology-roadmap.md`)

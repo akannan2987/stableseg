@@ -1,6 +1,6 @@
 # 01 · Setup on Windows (10 or 11), from a blank machine
 
-[← START HERE](../START-HERE.md) · [README](../README.md) · [Glossary](00-glossary.md)
+[← Build guide](../BUILD_GUIDE.md) · [README](../README.md) · [Glossary](00-glossary.md)
 
 **Prerequisites:** a Windows 10 or 11 machine, an internet connection, and
 permission to install software. Nothing else.

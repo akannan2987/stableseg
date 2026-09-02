@@ -1,6 +1,6 @@
 # 01 · Setup on macOS, from a blank machine
 
-[← START HERE](../START-HERE.md) · [README](../README.md) · [Glossary](00-glossary.md)
+[← Build guide](../BUILD_GUIDE.md) · [README](../README.md) · [Glossary](00-glossary.md)
 
 **Prerequisites:** a Mac (Intel or Apple Silicon) running macOS 12 or later, an
 internet connection, and your account password for installations.
