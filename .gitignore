@@ -28,8 +28,13 @@ Thumbs.db
 # The phantom set is rebuilt by `stableseg phantom`; real data is downloaded
 # by the ingestion phase. Keeping them out keeps the repository small and
 # keeps every result traceable to the code that produced it.
-data/
-runs/
+#
+# Note the trailing /* rather than a bare folder name. Git does not look
+# inside an excluded DIRECTORY, so `data/` followed by `!data/.gitkeep` would
+# silently ignore the exception and the placeholder would never be tracked.
+# Excluding the CONTENTS instead lets Git descend far enough to honour it.
+data/*
+runs/*
 !data/.gitkeep
 !runs/.gitkeep
 

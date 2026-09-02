@@ -197,7 +197,8 @@ what it means. Nothing is shown before it exists.*
 | 6 | Deep segmenter (MONAI 3D U-Net) + TorchIO artefacts | ⬜ planned |
 | 7 | The explorer (Streamlit) + sample-size calculator | ⬜ planned |
 | 8 | Report (Quarto), container, 0.2.0 | ⬜ planned |
-| — | Roadmap · Product and technology roadmap | ⬜ next |
+| — | [Roadmap](docs/05-roadmap.md) · [Product and technology roadmap](docs/06-product-and-technology-roadmap.md) | ✅ |
+| — | [CLI cookbook](docs/CLI_COOKBOOK.md) · [Hosting](docs/HOSTING.md) · [Uninstall](docs/UNINSTALL.md) | ✅ |
 
 ## The tutorial, in order
 
@@ -211,15 +212,16 @@ term defined and every command shown with its expected output.
 | 02 | [Architecture](docs/02-architecture.md) | Backend / frontend / database in plain words; the nine boxes and why each exists |
 | 03 | [Git workflow](docs/03-git-workflow.md) | Save-game for code; the `master`/`beta`/`develop` model step by step |
 | 04 | [Phase tutorials](docs/04-phase-tutorials/) | One file per build phase: goal, why, exact steps, checkpoint, what could go wrong, git block |
-| 05 | Roadmap *(next reply)* | What comes after 0.1.0, in order, with reasons |
-| 06 | Product and technology roadmap *(next reply)* | From a laptop tool to a hosted product: every technology judged, with verdicts and triggers |
-| 07 | Uninstall *(next reply)* | Removing everything cleanly |
-| 08 | Hosting *(next reply)* | Every way to put the explorer and report online, compared |
-| — | CLI cookbook *(next reply)* | Ready-to-paste commands, from first run to full audit |
+| 05 | [Roadmap](docs/05-roadmap.md) | What comes after 0.1.0, in order, and why that order |
+| 06 | [Product and technology roadmap](docs/06-product-and-technology-roadmap.md) | From a laptop tool to a hosted product: nineteen technologies judged, with verdicts and triggers |
+| — | [Uninstall](docs/UNINSTALL.md) | Removing any part, or all of it, cleanly and safely |
+| — | [Hosting](docs/HOSTING.md) | Every way to put the explorer and report online, compared |
+| — | [CLI cookbook](docs/CLI_COOKBOOK.md) | Tested, explained commands — grows every phase |
 
 ## Roadmap
 
-The short version; the reasoned version arrives with the roadmap document.
+The short version; the reasoned version, with the dependency order explained, is
+[`docs/05-roadmap.md`](docs/05-roadmap.md).
 
 - **0.2.0** real MRI, perturbation bank, classical segmenter, biomarkers,
   DuckDB store, repeatability statistics with an R cross-check, CT
@@ -286,8 +288,11 @@ stableseg/
 │   ├── 02-architecture.md
 │   ├── 03-git-workflow.md
 │   ├── 04-phase-tutorials/phase-01-skeleton.md   (one file per phase)
-│   ├── 05-roadmap.md · 06-product-and-technology-roadmap.md          (next)
-│   ├── 07-uninstall.md · 08-hosting.md · CLI_COOKBOOK.md             (next)
+│   ├── 05-roadmap.md              ← what comes next, in order, and why
+│   ├── 06-product-and-technology-roadmap.md  ← 19 technologies judged, with triggers
+│   ├── CLI_COOKBOOK.md            ← tested commands with real pasted output
+│   ├── HOSTING.md                 ← ways onto the internet, compared
+│   ├── UNINSTALL.md               ← complete, safe removal
 │   └── img/                       ← figures used in the docs
 ├── data/                          ← generated or downloaded; ignored by git
 └── runs/                          ← outputs; ignored by git; each run has run.json

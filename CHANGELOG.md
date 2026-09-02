@@ -35,6 +35,13 @@ First public release: a runnable skeleton with the full documentation set.
 - Continuous integration on Windows, macOS and Ubuntu with pinned dependencies.
 - Documentation set: `START-HERE.md`, architecture, glossary, per-OS setup
   guides (Windows, macOS, RHEL 8), git workflow and phase tutorials.
+- Roadmap (`docs/05-roadmap.md`) stating the build order and the dependency
+  reasoning behind it.
+- Product and technology roadmap (`docs/06-product-and-technology-roadmap.md`)
+  judging nineteen infrastructure options with a verdict and the trigger that
+  would change each one.
+- CLI cookbook (`docs/CLI_COOKBOOK.md`), hosting comparison (`docs/HOSTING.md`)
+  and uninstall guide (`docs/UNINSTALL.md`).
 
 ### Notes
 - Supported interpreters are **Python 3.12 and 3.13**. The floor comes from
