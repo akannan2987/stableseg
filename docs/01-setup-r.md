@@ -150,18 +150,59 @@ restart RStudio.
 
 ### Opening the project in RStudio
 
-**File → Open Project** does not apply here, because this is a Python project
-with an R folder rather than an R project. Instead:
+The repository contains **`stableseg.Rproj`** — RStudio's project file. Use it:
 
-**File → Open File**, then choose `R/verify_setup.R` inside your `stableseg`
-folder.
+**File → Open Project**, choose `stableseg.Rproj`. Or simply double-click the
+file in your file browser.
 
-Then set the working directory so the script can find the project:
-**Session → Set Working Directory → To Source File Location.**
+**What a `.Rproj` file does.** It tells RStudio that this folder is a project,
+and on opening it sets the working directory to the folder containing it. That
+means scripts find `data/` and `R/` without anyone remembering
+**Session → Set Working Directory**, which is the single most common cause of
+"it worked yesterday" in R.
 
-(The script actually copes on its own — it walks upward looking for
-`pyproject.toml` — but setting it explicitly is a good habit, and it is what
-makes RStudio's file pane show the right folder.)
+**The two settings inside it worth understanding**, because they are set
+against RStudio's defaults on purpose:
+
+```
+RestoreWorkspace: No
+SaveWorkspace: No
+```
+
+By default, RStudio saves every variable in memory to a hidden `.RData` file
+when you quit, and reloads them when you start. That feels helpful and quietly
+destroys reproducibility: a script appears to work because a variable is left
+over from an hour ago, and then fails for everyone else — including you next
+month.
+
+Starting from an empty workspace every time means a script either works from
+scratch or does not. The everyday version: cooking from the recipe each time,
+rather than from half-prepared ingredients you left on the counter and have
+now forgotten about.
+
+Open `R/verify_setup.R` from the Files pane once the project is open.
+
+### Using RStudio and VS Code at the same time
+
+You can, and it is a sensible way to work on this project: VS Code for the
+Python in `src/`, RStudio for the R in `R/`.
+
+They do not conflict. Both are ordinary text editors reading the same folder;
+neither locks files or claims ownership. Git does not care which one wrote a
+change.
+
+**One rule:** do not leave unsaved edits to the *same file* open in both.
+Whichever saves last overwrites the other, without warning. Since the Python
+and R live in separate folders, this should not come up.
+
+Two small things that make the pairing smoother:
+
+- Run the Python commands from VS Code's built-in terminal (it opens already in
+  the project folder, with the environment activatable) and the R from
+  RStudio's console.
+- RStudio's Git pane works on the same repository as the command line. Use
+  whichever you prefer; the branch model in
+  [`03-git-workflow.md`](03-git-workflow.md) is unchanged either way.
 
 ---
 
@@ -285,7 +326,9 @@ who runs this and pastes the result somewhere carries the disclosure with them.
 Nothing until phase 5. When it arrives, this folder gains:
 
 - **`renv`** — R's equivalent of the Python lock file, recording the exact
-  version of every R package so anyone can recreate the environment.
+  version of every R package so anyone can recreate the environment. Its
+  downloaded package library is excluded from version control, exactly as
+  `.venv` is on the Python side; the lock file itself is committed.
 - **The real cross-check** — intraclass correlation and Bland–Altman computed
   with `irr`, `psych` and `blandr`, required to agree with the Python
   implementation to four decimal places.

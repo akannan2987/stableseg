@@ -200,6 +200,9 @@ depend on them.
 | **RHEL system Python** (`/usr/bin/python3`) | The package manager `dnf` is written in it. Removing it breaks your ability to install anything, including a replacement. |
 | **Git**, if you use any other repository | Everything version-controlled on your machine stops working. |
 
+R and RStudio are safe to remove — nothing on a normal system depends on them
+unless you installed them for other work.
+
 ### Removing a Python you installed yourself
 
 **macOS** — the python.org installer places each version in its own folder, so
@@ -229,6 +232,29 @@ macOS: drag it from `/Applications` to the Trash. Its own settings folders sit
 under your Library folder and in `~/.vscode`, if you want those gone too. Windows: Settings → Apps → Visual Studio Code → Uninstall. RHEL:
 `sudo dnf remove code`.
 
+### Removing R and RStudio
+
+Both are optional extras for this project, and independent of everything else.
+Remove RStudio first — it is only an editor, and removing the R underneath it
+first would leave it unable to start.
+
+**RStudio.** macOS: drag it from `/Applications` to the Trash. Windows:
+Settings → Apps → RStudio → Uninstall. RHEL: `sudo dnf remove rstudio`, or
+delete the folder if you installed it by hand.
+
+**R.** macOS: `sudo rm -rf /Library/Frameworks/R.framework` and
+`sudo rm -rf /Applications/R.app`, or `brew uninstall r` if you installed it
+that way. Windows: Settings → Apps → find "R for Windows 4.x.x" → Uninstall.
+RHEL: `sudo dnf remove R`.
+
+**Installed R packages** live in your home directory, separately from R
+itself, so they survive an uninstall unless removed. Find them with
+`R -e '.libPaths()'` before removing R; afterwards, they are the
+`R` folder inside your Library or home directory.
+
+Nothing in the Python side of this project notices any of this. The R script
+is committed and will simply not run until R is reinstalled.
+
 ### Removing 3D Slicer
 
 Optional and independent of everything else. macOS: drag from `/Applications`.
@@ -251,7 +277,7 @@ cd ~/projects && rm -rf stableseg
 
 # 4. Optional: remove the Python you installed for it (section 6)
 
-# 5. Optional: remove VS Code and 3D Slicer if unused elsewhere
+# 5. Optional: remove VS Code, R, RStudio and 3D Slicer if unused elsewhere
 ```
 
 Windows equivalents are in the sections above.

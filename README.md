@@ -275,6 +275,7 @@ stableseg/
 ├── .github/workflows/ci.yml       ← tests on Windows, macOS, Ubuntu on every push
 ├── configs/
 │   └── phantom.yaml               ← a complete run config: generate phantoms
+├── stableseg.Rproj                ← RStudio project file: opens at the right working directory
 ├── R/
 │   └── verify_setup.R             ← proves the R toolchain works, before phase 5 needs it
 ├── scripts/

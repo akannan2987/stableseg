@@ -1,0 +1,31 @@
+Version: 1.0
+
+# RStudio project settings for StableSeg.
+#
+# Opening this file in RStudio sets the working directory to the project root,
+# so scripts find data/ and R/ without anyone having to remember Session > Set
+# Working Directory.
+#
+# The two settings that matter most are the first two, and they are set this
+# way on purpose:
+#
+#   RestoreWorkspace: No   - do not reload variables from last time on startup
+#   SaveWorkspace:    No   - do not save them on exit
+#
+# RStudio's default is to save your variables to a hidden .RData file and
+# reload them next session. That feels convenient and quietly destroys
+# reproducibility: a script appears to work because a variable is left over
+# from an hour ago, and then fails for everyone else. Starting from an empty
+# workspace every time means a script either works from scratch or does not.
+
+RestoreWorkspace: No
+SaveWorkspace: No
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX

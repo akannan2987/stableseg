@@ -417,6 +417,76 @@ Leave Python with `exit()` or Ctrl-D.
 
 ---
 
+## 5b · The R side
+
+Optional. Skip this section entirely if you have not installed R
+([`01-setup-r.md`](01-setup-r.md)); nothing else depends on it.
+
+### 5b.1 Verify the R toolchain
+
+```bash
+Rscript R/verify_setup.R
+```
+
+The important lines:
+
+```
+Cross-check against the Python side:
+  mean total volume computed in R: 2269.75 mm3
+  value published by the Python tool: 2269.75 mm3
+  -> match
+
+R toolchain verified.
+```
+
+**What this proves, and why it is worth a whole script.** Python generated the
+data and published a number. R read the saved file, independently, and got the
+same number. That confirms the file was written correctly, read correctly, and
+that both languages agree on the arithmetic — before either is trusted with
+anything that matters.
+
+It has been run on macOS with R 4.6 and on Linux with R 4.3, on different
+processor architectures, producing identical digits. That is the shape of every
+cross-check this project will make: **two implementations, one number.**
+
+Note that this script uses **base R only** — no packages, so nothing to
+download and nothing to fail behind a proxy. Package management arrives at the
+statistics phase.
+
+### 5b.2 The same thing from RStudio
+
+Open `stableseg.Rproj` (double-click it, or **File → Open Project**). Opening
+the project file rather than the script sets the working directory to the
+project root automatically.
+
+Then open `R/verify_setup.R` and click **Source** — or press **Ctrl+Shift+S**,
+**Cmd+Shift+S** on a Mac. Same output, in the console pane.
+
+### 5b.3 A one-off calculation without a script
+
+```bash
+Rscript -e 'm <- read.csv("data/phantom/manifest.csv"); print(mean(m$true_volume_total_mm3))'
+```
+
+```
+[1] 2269.75
+```
+
+`-e` runs a single expression, the way `python -c` does. Useful for a quick
+question you do not want to keep.
+
+### 5b.4 Running both editors at once
+
+VS Code and RStudio can be open on this project simultaneously, and it is a
+reasonable way to work: VS Code for the Python, RStudio for the R.
+
+They do not conflict — both are ordinary text editors reading the same folder.
+The one rule: **do not leave unsaved edits to the same file in both.** Whichever
+saves last wins, silently. Since Python lives in `src/` and R lives in `R/`,
+that situation should not arise in practice.
+
+---
+
 ## 6 · Development commands
 
 ### 6.1 The loop you will run hundreds of times
@@ -536,7 +606,7 @@ skipped. Each appears here, with real pasted output, when its phase lands.
 | 2 · Real data | `stableseg fetch-msd`, `stableseg describe` on a real scan, DICOM import |
 | 3 · Perturbations | `stableseg perturb --profile mri`, listing available disturbances |
 | 4 · Segment & measure | `stableseg segment`, `stableseg measure`, SQL queries against the results database |
-| 5 · Statistics | `stableseg audit`, `stableseg sample-size --detect 5%` |
+| 5 · Statistics | `stableseg audit`, `stableseg sample-size --detect 5%`, and the R cross-check with `irr` / `psych` / `blandr` |
 | 6 · Deep segmenter | `stableseg train`, `stableseg segment --model unet` |
 | 7 · Explorer | `streamlit run app/explorer.py` |
 | 8 · Report | `quarto render report/audit.qmd` |

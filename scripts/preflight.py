@@ -84,6 +84,8 @@ TEXT_SUFFIXES = {
     ".ps1",
     ".r",
     ".R",
+    ".Rproj",
+    ".Rmd",
     ".qmd",
     ".lock",
     "",

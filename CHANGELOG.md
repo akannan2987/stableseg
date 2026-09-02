@@ -39,8 +39,9 @@ First public release: a runnable skeleton with the full documentation set.
   from day zero to the finished tool — installing, every build phase, and the
   reasoning behind the order — linking out to the detailed documents rather
   than repeating them. The one document to open first.
-- R toolchain verification (`R/verify_setup.R`) and its setup guide
-  (`docs/01-setup-r.md`). Reads the generated manifest with base R only, no
+- R toolchain verification (`R/verify_setup.R`), an RStudio project file
+  (`stableseg.Rproj`) configured against workspace persistence for
+  reproducibility, and the setup guide (`docs/01-setup-r.md`). Reads the generated manifest with base R only, no
   packages, and recomputes a value the Python side published, so the
   cross-language toolchain is proven before the statistics phase relies on it.
 - Roadmap (`docs/05-roadmap.md`) stating the build order and the dependency

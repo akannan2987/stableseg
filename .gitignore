@@ -38,6 +38,20 @@ runs/*
 !data/.gitkeep
 !runs/.gitkeep
 
+# --- R working files ---
+# .Rproj.user holds RStudio's per-user pane layout and scratch state; the
+# others are session leftovers. stableseg.Rproj ITSELF is committed - it is
+# the shared project settings, and it is what makes RStudio open at the right
+# working directory. renv/library is a local package cache, restored from
+# renv.lock, so it is excluded the same way .venv is.
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+renv/library/
+renv/local/
+renv/staging/
+
 # --- Rendered documents (Quarto) ---
 _site/
 *.quarto_ipynb

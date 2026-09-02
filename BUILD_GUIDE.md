@@ -686,6 +686,17 @@ phase 5, when there is a real reason for it.
 Windows, macOS and RHEL 8, what each is, running the script both ways, and what
 to do when it fails.
 
+The repository also carries `stableseg.Rproj`, RStudio's project file. Opening
+it sets the working directory to the project root, so scripts find their data
+without anyone remembering to set it. It also switches off RStudio's habit of
+saving your variables between sessions — convenient, and quietly fatal to
+reproducibility, because a script can appear to work on leftovers from an hour
+ago and then fail for everyone else.
+
+VS Code and RStudio can both be open on this project at once: VS Code for the
+Python, RStudio for the R. They are ordinary editors reading the same folder
+and do not conflict.
+
 ### How you know it worked
 
 ```bash
