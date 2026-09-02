@@ -1,6 +1,7 @@
 # Changelog
 
-All notable changes to StableSeg are recorded here. The format follows
+All notable changes to StableSeg are recorded here. Unfamiliar terms are
+defined in [`docs/00-glossary.md`](docs/00-glossary.md). The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow
 [Semantic Versioning](https://semver.org/): `MAJOR.MINOR.PATCH`, where a new
 MINOR adds capability and a new PATCH only fixes things.
@@ -26,11 +27,22 @@ First public release: a runnable skeleton with the full documentation set.
 - Deterministic synthetic phantom generator (`phantom.py`) writing NIfTI
   images, labels and a manifest with known true volumes.
 - Command-line interface: `version`, `describe`, `phantom`, `validate-config`.
-- Test suite (17 tests) that needs no download; runs in under a second.
+- Test suite (36 tests) that needs no download, including checks that the
+  declared Python range matches what the pinned dependencies actually require.
+- `scripts/preflight.py`: a pre-push safety check for credentials, oversized
+  files, force-added ignored paths, absolute home paths and mixed line
+  endings, with explicit per-line and per-file escape markers.
 - Continuous integration on Windows, macOS and Ubuntu with pinned dependencies.
-- Documentation set: architecture, glossary, per-OS setup guides, git
-  workflow, phase tutorials, roadmap, product and technology roadmap,
-  uninstall and hosting notes.
+- Documentation set: `START-HERE.md`, architecture, glossary, per-OS setup
+  guides (Windows, macOS, RHEL 8), git workflow and phase tutorials.
+
+### Notes
+- Supported interpreters are **Python 3.12 and 3.13**. The floor comes from
+  the pinned `numpy` and `scipy`, which both require 3.12 or newer; the
+  ceiling is caution pending verification of the imaging stack on 3.14.
+  Continuous integration covers both versions on all three operating systems.
+  On macOS and Windows, install 3.13 (python.org no longer ships installers
+  for 3.12); on RHEL 8, install 3.12 from AppStream.
 
 [Unreleased]: https://github.com/akannan2987/stableseg/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/akannan2987/stableseg/releases/tag/v0.1.0

@@ -2,10 +2,10 @@
 
 [← README](../../README.md) · [All docs in order](../../README.md#the-tutorial-in-order) · [Glossary](../00-glossary.md) · [Architecture](../02-architecture.md)
 
-**Prerequisites:** your OS setup guide completed (Python 3.12, Git, VS Code, a virtual environment that activates), and `03-git-workflow.md` sections 1–3.
+**Prerequisites:** your OS setup guide completed (Python 3.12 or 3.13, Git, VS Code, a virtual environment that activates), and `03-git-workflow.md` sections 1–3.
 **Learning goal:** after this phase you understand what an installable Python package is and why the code lives in `src/`; what a validated config is and why every run is a file; what a storage abstraction buys you; how a 3-D image carries its geometry; how a deterministic generator works; how a command-line tool wraps plain functions; what a unit test is; and what continuous integration does on every push.
 **Time:** about 2 hours reading and typing, split into three sessions of 40 minutes if needed. Each section ends at a point where everything still works.
-**Checkpoint:** `pytest -q` prints `18 passed`; `stableseg phantom` writes eight phantom files and a `run.json`; the CI badge on GitHub turns green on all three operating systems.
+**Checkpoint:** `pytest -q` prints `36 passed`; `stableseg phantom` writes eight phantom files and a `run.json`; the CI badge on GitHub turns green on all three operating systems.
 
 ---
 
@@ -42,7 +42,21 @@ Look at the tree: the code is in `src/stableseg/`, not in `stableseg/` at the to
 
 Open it. Each section:
 
-- `[project]`: name, version, description, the Python versions supported (`>=3.11,<3.13`: 3.13 is not yet safe for the imaging libraries; 3.10 lacks `tomllib`, which a test uses), and the **dependencies**: libraries the code imports. Only the core stack is listed. This is deliberate: the audit engine must run without PyTorch.
+- `[project]`: name, version, description, the Python versions supported, and the **dependencies**: libraries the code imports. Only the core stack is listed. This is deliberate: the audit engine must run without PyTorch.
+
+  **On `requires-python = ">=3.12,<3.14"`, which is worth dwelling on.** A version range in a project is not a preference, it is a claim you must be able to defend, and both ends of this one have a specific cause:
+
+  - The **floor** is not set by our code, which would run happily on 3.11. It is set by our *dependencies*: the pinned `numpy 2.5.2` and `scipy 1.18.1` each declare `requires-python >= 3.12`. Install on 3.11 and pip refuses. When a dependency's floor is higher than yours, theirs wins, and your declared range has to say so — otherwise a user gets a confusing failure several minutes into an install instead of a clear one at the start.
+  - The **ceiling** is caution, not certainty. Newer Python versions are excluded because the imaging stack has not been checked there, and because later phases add PyTorch and MONAI, which typically trail a new Python release by months. Scientific Python projects habitually sit one version behind the newest for this reason.
+
+  **How to check this rather than guess it** — the habit worth stealing from this section. For any pinned package, PyPI publishes its metadata as JSON:
+
+  ```bash
+  python -c "import json,urllib.request as u; d=json.load(u.urlopen('https://pypi.org/pypi/numpy/2.5.2/json')); print(d['info']['requires_python'])"
+  ```
+  Expected: `>=3.12`
+
+  The same JSON lists every ready-built package under `d['urls']`, so you can also confirm that a package ships one for your interpreter and machine rather than making pip compile it from source. Run that check whenever `requirements.lock` is regenerated; a version range written from memory is a version range that will be wrong eventually.
 - `[project.optional-dependencies]`: three named bundles a user can add: `deep` (PyTorch, MONAI, TorchIO), `app` (Streamlit, Plotly), `dev` (pytest, ruff). `pip install -e ".[dev]"` installs the core plus the dev bundle.
 - `[project.scripts]`: `stableseg = "stableseg.cli:app"` tells pip to create a command named `stableseg` that runs the `app` object in `cli.py`. That is how typing `stableseg version` works.
 - `[tool.setuptools.packages.find] where = ["src"]`: the src layout, declared.
@@ -65,6 +79,11 @@ python -c "import stableseg; print(stableseg.__version__)"
 ```
 Expected: `0.1.0`
 
+If instead you see `ERROR: Package 'stableseg' requires a different Python`, the
+virtual environment was built on an interpreter outside 3.12–3.13. Nothing is
+broken: `deactivate`, delete `.venv`, and recreate it naming the version
+explicitly (section 6 of your setup guide).
+
 ### 1.5 `__init__.py`
 
 The file that makes a folder a package. Ours holds the version string and, in its docstring, the one rule the whole project obeys: `cli → api → core`, arrows only pointing down. Read the docstring; it is the shortest possible statement of the architecture.
@@ -75,7 +94,8 @@ The file that makes a folder a package. Ours holds the version string and, in it
 |---|---|---|
 | `No module named stableseg` | virtual environment not active, or install skipped | activate (`source .venv/bin/activate` / `.\.venv\Scripts\Activate.ps1`), reinstall |
 | `pip` installs into the system Python | same | `which python` (macOS/Linux) or `Get-Command python` (Windows) must point inside `.venv` |
-| `error: Microsoft Visual C++ 14.0 is required` on Windows | a dependency tried to compile from source | you are on an old Python or a 32-bit one; use 64-bit Python 3.12 so binary wheels are found |
+| `error: Microsoft Visual C++ 14.0 is required` on Windows | a dependency tried to compile from source | you are on an unsupported or 32-bit Python; use 64-bit 3.13 so ready-built packages are found |
+| `ERROR: Package 'stableseg' requires a different Python: 3.x.y not in '<3.14,>=3.12'` | the virtual environment was built on the wrong interpreter | `deactivate`, delete `.venv`, recreate naming `python3.13` (or `py -3.13`, or `python3.12` on RHEL) |
 
 ---
 
@@ -179,6 +199,12 @@ Open `data/phantom/manifest.csv`: the two volumes you just printed appear in the
 
 ## 5. Session B: the phantom generator (`phantom.py`)
 
+*If you have not met the word "phantom" before, read its
+[glossary entry](../00-glossary.md) first — one paragraph, with the everyday
+comparison. The short version: a phantom is a stand-in for a patient used to
+check a measuring instrument, and a digital phantom is one generated by code so
+its true size is known exactly.*
+
 ### 5.1 Why synthetic data, and why it is disclosed
 
 Three reasons, all stated in the module docstring: tests must run anywhere in seconds; a phantom has a *known* true volume, which real scans never do; and the same seed regenerates the same phantoms on every machine. The phantoms are labelled `synthetic: true` in their metadata and in the manifest, and every document calls them synthetic. They are a fixture, not a claim.
@@ -248,13 +274,14 @@ A tiny program that runs a piece of your code with a known input and asserts the
 - `test_api_and_storage.py`: the API works without the CLI; the provenance stamp records version and config; `LocalStorage` stays inside its run folder.
 - `test_cli.py`: every command exits 0 and prints JSON, using Typer's `CliRunner` so no subprocess is needed.
 - `test_version.py`: `pyproject.toml` and `__init__.py` agree on the version; the release checklist made enforceable.
+- `test_python_support.py`: the interpreter running the tests is inside the declared range, and that range's floor is at least what the pinned dependencies demand. This file exists because both of those have already gone wrong here: an environment built on an unsupported version, and a declared floor written from memory rather than derived from `numpy`'s and `scipy`'s actual requirement. Turning a mistake into a test is how it stops recurring.
 
 ### 7.3 Run them
 
 ```bash
 pytest -q
 ```
-Expected: `18 passed in 0.5s` (time varies). `-q` is quiet; drop it to see each test's name. `pytest -q --cov=stableseg --cov-report=term-missing` adds a coverage table: which lines the tests exercised.
+Expected: `36 passed in 0.5s` (time varies). `-q` is quiet; drop it to see each test's name. `pytest -q --cov=stableseg --cov-report=term-missing` adds a coverage table: which lines the tests exercised.
 
 Break something on purpose: in `phantom.py`, change `label[head] = 1` to `label[head] = 3`. Run `pytest -q`. Expected: `test_labels_are_1_and_2_and_non_empty` fails with `assert {0, 2, 3} == {0, 1, 2}`. Put it back. That is the safety net doing its job.
 
@@ -303,7 +330,7 @@ You are done with phase 1 when all of these are true:
 - [ ] `stableseg phantom` prints `"mean_true_volume_mm3": 2269.75`
 - [ ] `stableseg describe data/phantom/images/phantom_000.nii.gz` prints shape `[48, 64, 48]`
 - [ ] `ruff check .` prints `All checks passed!` and `ruff format --check src tests` prints `... already formatted`
-- [ ] `pytest -q` prints `18 passed`
+- [ ] `pytest -q` prints `36 passed`
 - [ ] after the git block below, GitHub's Actions tab shows three green jobs
 
 ---
@@ -336,4 +363,4 @@ git switch develop
 
 Then open the repository on GitHub, click **Actions**, and watch three jobs turn green. That green is the end of phase 1.
 
-Next: [`phase-02-real-data.md`](phase-02-real-data.md) (arrives with 0.2.0), where the real hippocampus MRI lands.
+Next: `phase-02-real-data.md` (arrives with 0.2.0), where the real hippocampus MRI lands.

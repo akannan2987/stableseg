@@ -3,6 +3,9 @@
 #
 # Windows and macOS are hosted runners. There is no hosted RHEL 8 runner; the
 # Ubuntu job covers Linux, and docs/01-setup-rhel8.md is the tested RHEL path.
+#
+# Both supported Python versions are tested: 3.12 (what RHEL 8 AppStream ships)
+# and 3.13 (what python.org currently offers a macOS/Windows installer for).
 
 name: ci
 
@@ -21,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python: ["3.12"]
+        python: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +47,9 @@ jobs:
 
       - name: Test
         run: pytest -q --cov=stableseg --cov-report=term-missing
+
+      - name: Preflight (repository safety checks)
+        run: python scripts/preflight.py
 
       - name: Smoke-run the CLI
         run: |

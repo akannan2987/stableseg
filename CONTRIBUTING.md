@@ -1,5 +1,7 @@
 # Contributing to StableSeg
 
+Unfamiliar terms are defined in [`docs/00-glossary.md`](docs/00-glossary.md).
+
 This file describes how work moves through the repository: the branch model,
 the everyday loop, the release flow, and the norms for reviewing each other's
 work. It is written so that a first-time contributor can follow it without
@@ -59,6 +61,53 @@ pytest -q                 # all tests must pass
 
 CI runs the same three commands on Windows, macOS and Ubuntu. A commit that
 fails locally will fail there too, so run them first.
+
+## Before every push
+
+```bash
+python scripts/preflight.py
+```
+
+Pushing is easy to undo in principle and hard to undo in practice: once a
+commit reaches a public host it has been copied and possibly indexed, and
+rewriting history does not recall those copies. A leaked credential must be
+treated as compromised even if the commit is deleted a minute later. So the
+cheap moment to catch a mistake is before the push.
+
+Preflight checks that you are on `develop`; that nothing `.gitignore` is meant
+to exclude has been force-added; that no oversized file is about to enter the
+history permanently; that no credential pattern appears in the content; that
+no absolute home path leaks your username; and that line endings are
+consistent. It changes nothing and exits non-zero if anything blocks.
+
+Two escape hatches exist, because a check with no way to say "this is
+deliberate" gets switched off the first time it is wrong:
+
+- `# preflight: allow` on a line exempts that line
+- `preflight: allow-file` anywhere in a file exempts the whole file
+
+Both are visible in the diff. Use them with a comment saying why;
+`tests/test_preflight.py` is the one file that currently needs one, since it
+contains fake credentials as test inputs.
+
+Optionally, keep a local `.preflight-words` file (one term per line, already
+git-ignored) and preflight will also fail on any of those terms appearing in
+the repository. The list stays out of git on purpose: a committed file naming
+the terms you want to avoid would itself contain them.
+
+### Making it automatic
+
+Git can run this for you on every push. Hooks are not committed, so each clone
+opts in:
+
+```bash
+printf '#!/bin/sh\nexec python scripts/preflight.py\n' > .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+On Windows, create `.git/hooks/pre-push` with the same two lines; Git for
+Windows ships the shell needed to run it. Bypass in an emergency with
+`git push --no-verify`, and then go back and fix whatever it found.
 
 ## Commit messages
 

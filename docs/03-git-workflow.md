@@ -113,6 +113,25 @@ pytest -q
 ```
 All three must be clean (`All checks passed!`, `N passed`).
 
+Then, before pushing:
+
+```bash
+python scripts/preflight.py
+```
+Expected last line: `Clear to commit and push.`
+
+This is the safety gate. It looks for credentials, oversized files, anything
+`.gitignore` should have excluded, and absolute paths containing your
+username - the four ways a public push goes wrong. It reads only; it never
+changes a file. If it reports a problem, fix it and run it again. Full
+description in [`../CONTRIBUTING.md`](../CONTRIBUTING.md), section "Before
+every push", including how to make Git run it automatically.
+
+Why before the push and not after: history rewriting does not recall copies
+that have already been fetched, cached or indexed. A key that reaches a public
+repository is compromised, full stop, even if the commit is removed a minute
+later. Checking first costs two seconds.
+
 Then the fixed block that ends every phase:
 
 ```bash

@@ -7,7 +7,7 @@ name = "stableseg"
 version = "0.1.0"
 description = "A measurement-system audit for imaging biomarkers: how much does a number measured from a scan move when the patient has not changed?"
 readme = "README.md"
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Abhilash Kannan" }]
 keywords = ["medical-imaging", "biomarker", "repeatability", "segmentation", "quality-assurance"]
@@ -18,12 +18,19 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Image Processing",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
 # The core engine deliberately needs no deep-learning framework.
-# Everything here installs from binary wheels on Windows, macOS and RHEL 8.
+# Everything here installs from ready-built wheels on Windows, macOS and RHEL 8.
+#
+# Why the floor is Python 3.12: numpy and scipy both declare requires-python
+# >=3.12 at the versions pinned in requirements.lock, so 3.11 cannot install
+# this project even though the source itself would run there. Why the ceiling
+# is below 3.14: not yet verified against the imaging stack. Both bounds are
+# checked against PyPI metadata whenever requirements.lock is regenerated.
 dependencies = [
     "numpy>=1.26,<3",
     "scipy>=1.11",
@@ -69,7 +76,7 @@ markers = [
 
 [tool.ruff]
 line-length = 110
-target-version = "py311"
+target-version = "py312"
 src = ["src", "tests"]
 
 [tool.ruff.lint]
