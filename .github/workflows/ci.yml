@@ -9,12 +9,16 @@
 
 name: ci
 
+# One push updates develop, beta and master at the same commit, so triggering
+# on all three would run identical checks three times and prove nothing twice.
+# develop is where work lands; master is what the badge and any release
+# reflect; beta is always a mirror of develop, so it is left out.
 on:
   push:
-    branches: [master, beta, develop]
+    branches: [master, develop]
     tags: ["v*"]
   pull_request:
-    branches: [master, beta, develop]
+    branches: [master, develop]
 
 jobs:
   test:
