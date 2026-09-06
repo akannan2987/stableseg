@@ -10,7 +10,9 @@
 
 ## 1. What is StableSeg, in one honest sentence?
 
-StableSeg takes a piece of software that measures a structure in a medical scan, deliberately disturbs the scan in realistic ways, measures again and again, and reports how much the measurement wobbles when the patient has not changed, so that anyone relying on that measurement knows its noise floor before they trust it.
+StableSeg takes a piece of software that measures something in a medical image — the volume of a brain structure in an MRI, or the density of a cell type on a stained tissue slide — deliberately disturbs the image in realistic ways, measures again and again, and reports how much the measurement wobbles when the patient has not changed, so that anyone relying on that measurement knows its noise floor before they trust it.
+
+It does this on **two tracks** that share one statistical spine: **Track V** (volumetric radiology: MRI and CT, in millimetres) and **Track P** (digital pathology: H&E, IHC and multiplex-immunofluorescence tiles, in microns). The question, the statistics and the report are the same; only the picture and the disturbances differ. Section 4b draws both.
 
 If you know nothing about medicine or software, here is the everyday version:
 
@@ -87,7 +89,7 @@ flowchart TD
 *(Reading this as plain text? Top to bottom: data feeds preprocessing, which feeds the perturbation bank, which feeds segmentation, which feeds measurement, which fills the store; the statistics read the store and feed both the explorer and the report.)*
 
 ### Box 1 — Data · *backend*
-**What:** the scans and, where available, the expert masks that go with them.
+**What:** the scans and, where available, the expert masks that go with them. On Track P: tiles cut from whole-slide images, multichannel mIF stacks, spatial-transcriptomics spot tables, and the synthetic H&E phantoms — every real dataset described in its [data card](data-cards/README.md).
 **Why two sources:** the synthetic phantoms (phase 1) have a *known* true volume and generate in seconds on any machine, so the tests and the first end-to-end run need no download and the pipeline can be checked against an answer key. The real MRI (phase 2) is where the audit becomes meaningful.
 **Where:** `src/stableseg/phantom.py` today; a NIfTI-folder loader and a DICOM reader in phase 2.
 
@@ -124,6 +126,73 @@ flowchart TD
 ### Box 9 — Report · *the record*
 **What:** a Quarto document that re-renders itself from the store: methods, figures, tables, the minimum detectable change, the stated limitations.
 **Why:** an audit is only useful if there is a document someone can read and file. A dashboard alone is not a record.
+
+### The same nine boxes, on two tracks
+
+Every box above exists on both tracks. Boxes 1–5 have a track-specific
+implementation (a 3-D volume is not a 2-D tile, and stain drift is not
+magnetic-field drift); boxes 6–9 are **shared and built once**.
+
+```mermaid
+flowchart TB
+    subgraph TV["🧠  TRACK V — volumetric radiology (mm)"]
+        VA["1 · MRI / CT volumes<br/>NIfTI · DICOM · MRI phantoms"]
+        VB["2 · orientation · resample<br/>intensity normalise"]
+        VC["3 · noise · blur · bias field<br/>motion · anisotropy"]
+        VD["4 · threshold baseline · 3D U-Net<br/>· imported masks"]
+        VE["5 · volume · surface · sphericity"]
+        VA --> VB --> VC --> VD --> VE
+    end
+    subgraph TP["🔬  TRACK P — digital pathology (µm)"]
+        PA["1 · H&E · IHC · mIF tiles · WSI<br/>spatial-transcriptomics spots · H&E phantoms"]
+        PB["2 · colour deconvolution<br/>tile quality control"]
+        PC["3 · stain shift · scanner colour<br/>JPEG · focus · magnification · folds"]
+        PD["4 · tissue seg · nucleus detect<br/>phenotype gating · foundation-model embed"]
+        PE["5 · densities · positivity · H-score<br/>spatial stats · cell-graph score"]
+        PA --> PB --> PC --> PD --> PE
+    end
+    subgraph SP["🧮  SHARED SPINE — one implementation"]
+        F[("6 · Store — one DuckDB file,<br/>modality column")]
+        G["7 · ICC · wCV · Bland–Altman · RC<br/>minimum detectable change · sample size<br/>+ R cross-check"]
+        H["8 · Explorer — modality switch"]
+        I["9 · Report — both tracks"]
+        F --> G --> H
+        G --> I
+    end
+    VE --> F
+    PE --> F
+
+    classDef v fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef p fill:#FDE8E8,stroke:#CC3311,color:#5A1010;
+    classDef store fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    classDef s fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class VA,VB,VC,VD,VE v
+    class PA,PB,PC,PD,PE p
+    class F store
+    class G,H,I s
+    style TV fill:#F5F9FF,stroke:#B9D2FF
+    style TP fill:#FFF5F5,stroke:#F2B8B0
+    style SP fill:#F2FBF5,stroke:#B7E4C7
+```
+
+*(Plain text: two parallel pipelines — radiology on the left, pathology on the
+right — each running data → preprocess → perturb → segment → measure, and both
+writing into one shared store that feeds one statistics module, one explorer
+and one report.)*
+
+**What "shared" buys.** The statistics are written once and cross-checked in R
+once. A pathologist and a radiologist reading the report see the same table
+layout, the same minimum-detectable-change column, the same sample-size
+calculator. And the geometry rule is the same rule in both worlds: a 3-D
+volume carries its voxel spacing, a tile carries its microns-per-pixel and
+channel names, and no function in the project is allowed to separate the
+numbers from either.
+
+**What differs, honestly.** Track P has something Track V lacks: a real
+test–retest dataset (the same tissue under seven scanners and thirteen
+stains — see the [PLISM data card](data-cards/plism.md)), so its simulated
+disturbances can be validated against real ones. Track V's repeats are
+simulated until a public same-subject repeat-MRI set is adopted.
 
 ### The dotted box — a tool server (roadmap)
 Because every capability is a plain function in `api.py`, a small server can expose those functions to other programs. Nothing about it is built today; the API surface is shaped so that adding it later is additive, not a rewrite. Judged in `06-product-and-technology-roadmap.md`.
@@ -162,15 +231,27 @@ Data flows **one way** (top to bottom in the diagram) and no step edits its own 
 
 ## 7. Where each phase of the build lives
 
-| Phase | Tutorial | Boxes |
-|---|---|---|
-| 1 | `04-phase-tutorials/phase-01-skeleton.md` | the layering, config, storage, I/O, phantoms (box 1) |
-| 2 | `phase-02-real-data.md` | box 1 (MSD + DICOM) |
-| 3 | `phase-03-perturbation-bank.md` | box 3 |
-| 4 | `phase-04-segment-and-measure.md` | boxes 2, 4, 5, 6 |
-| 5 | `phase-05-repeatability-statistics.md` | box 7 |
-| 6 | `phase-06-deep-segmenter.md` | box 4 (U-Net), box 3 (TorchIO) |
-| 7 | `phase-07-explorer.md` | box 8 |
-| 8 | `phase-08-report-and-release.md` | box 9, container, 0.2.0 |
+| Phase | Track | Tutorial | Boxes |
+|---|---|---|---|
+| 1 · 1b · 1c | shared | `04-phase-tutorials/phase-01-skeleton.md`, `01-setup-r.md`, `phase-01c-first-release.md` | the layering, config, storage, I/O, MRI phantoms (box 1), R toolchain, first release |
+| P1a | P | `phase-P1a-he-phantom.md` | box 1 (synthetic H&E phantom) |
+| V2 | V | `phase-V2-real-data.md` | box 1 (MSD + DICOM) |
+| P1 | P | `phase-P1-pathology-data.md` | box 1 (WSI, OME-TIFF, AnnData, IHC/mIF phantoms, data cards), shared geometry base |
+| V3 | V | `phase-V3-mri-perturbation-bank.md` | box 3 |
+| P2 | P | `phase-P2-pathology-perturbation-bank.md` | box 3, validated on PLISM |
+| V4 | V | `phase-V4-segment-and-measure.md` | boxes 2, 4, 5, 6 |
+| P3 | P | `phase-P3-segment-phenotype-spatial.md` | boxes 2, 4, 5, 6 |
+| S1 | shared | `phase-S1-repeatability-statistics.md` | box 7, R cross-check, SQL cookbook |
+| V6 | V | `phase-V6-deep-segmenter.md` | box 4 (U-Net), box 3 (TorchIO) |
+| P4 | P + shared | `phase-P4-foundation-models-and-benchmark.md` | box 4 (embeddings), benchmark harness |
+| P5 | P | `phase-P5-cell-graph-network.md` | box 5 (graph biomarker) |
+| P6 | P | `phase-P6-multimodal.md` | boxes 4–5 (H&E↔IHC, H&E↔spots) |
+| P7 | P | `phase-P7-stain-normalisation.md` | box 2 / generative |
+| S2 | shared | `phase-S2-explorer.md` | box 8, modality switch |
+| S3 | shared | `phase-S3-report-and-publication.md` | box 9, publication package, container |
+
+Tutorial filenames for unbuilt phases are the planned names; each file appears
+when its phase lands, and [`../BUILD_GUIDE.md`](../BUILD_GUIDE.md) flips the
+phase from ⬜ to ✅ in the same commit.
 
 Next: the setup guide for your operating system (`01-setup-windows.md`, `01-setup-macos.md` or `01-setup-rhel8.md`), then `03-git-workflow.md`, then phase 1.

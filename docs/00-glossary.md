@@ -125,6 +125,8 @@ real cause of scan-to-scan difference: noise, blur, a movement artefact, a
 different slice thickness. The scan changes; the patient did not. The heart of
 this project.
 
+  ![One slice under noise, blur, drift and rotation](img/perturbation_preview.png)
+
 **Preprocessing.** Everything done to a scan before analysis: fixing
 orientation, resampling to a common voxel size, normalising brightness,
 sometimes denoising. *Everyday version:* squaring up and cropping a scanned
@@ -144,6 +146,8 @@ copies of the same map on top of each other until they line up.
 are to each other, with everything kept as constant as possible. Contrast with
 **reproducibility**, which is the same question when something deliberately
 differs (a different scanner, a different operator).
+
+  ![Stable versus unstable measurement of an unchanged patient](img/repeatability_wobble.png)
 
 **Repeatability coefficient (RC).** A single number, in the units of your
 measurement, such that the difference between two repeat measurements will be
@@ -180,6 +184,8 @@ true` inside the files themselves and states it in every document.
 **Voxel.** A three-dimensional pixel: one small box in a scan. Multiply its
 three side lengths to get its volume in cubic millimetres. Count the voxels in
 a mask, multiply by that, and you have the biomarker.
+
+  ![How voxel counting and spacing produce a volume](img/voxel_volume.png)
 
 **wCV (within-subject coefficient of variation).** The measurement noise
 expressed as a percentage of the measurement itself. *Everyday version:*
@@ -377,3 +383,269 @@ brackets. Our config files are YAML.
 
 *Missing a word? Open an issue titled "glossary: <word>". A term used but not
 defined is a defect in the documentation, not a gap in the reader.*
+
+---
+
+## Part 3 — Digital pathology and spatial biology
+
+*Track P's vocabulary. Every term used anywhere in the pathology track is
+defined here, with an everyday comparison. Read in any order.*
+
+**Histology.** The study of tissue under a microscope. A sliver of tissue a few
+thousandths of a millimetre thick is placed on a glass slide, stained so its
+parts become visible, and examined. *Everyday version:* looking at the weave
+of a fabric through a magnifying glass rather than judging the coat from
+across the room.
+
+**Slide.** The glass rectangle carrying one thin tissue section. Everything in
+Track P starts as a slide.
+
+**Whole-slide image (WSI).** A slide, scanned at very high resolution into one
+enormous digital picture — routinely 100,000 pixels on a side and several
+gigabytes. *Everyday version:* a satellite map of a whole city, where you can
+zoom from the city outline down to a single doorstep. Nobody looks at all of it
+at once, which is why the next two terms exist.
+
+**Pyramid (image pyramid).** A whole-slide image stored at several resolutions
+at once — the full picture, a half-size copy, a quarter-size copy, and so on —
+so a viewer can show the whole slide at low resolution and zoom into any part at
+full resolution without loading everything. *Everyday version:* a map app that
+keeps street level, district level and country level as separate layers.
+
+**Tile.** A small square cut from a whole-slide image at one pyramid level,
+typically 224 to 1024 pixels on a side. Analysis happens on tiles because a
+whole slide does not fit in memory. This project's core audit runs on tiles,
+which is what keeps it CPU-first.
+
+**Microns per pixel (MPP).** The physical size of one pixel in a pathology
+image, in micrometres (thousandths of a millimetre). It is the pathology
+equivalent of *voxel spacing*: the number that turns a pixel count into an area,
+and the number that must never be separated from the picture. A nucleus that
+is 40 pixels across is 10 µm at 0.25 MPP and 20 µm at 0.5 MPP.
+
+**Magnification.** The objective-lens power a slide was scanned at — 20× or
+40× are the common ones. It maps loosely to microns per pixel (40× is roughly
+0.25 MPP; 20× roughly 0.5 MPP), but the MPP is the exact number and the one the
+project stores.
+
+**H&E (hematoxylin and eosin).** The standard tissue stain, used for over a
+century. **Hematoxylin** colours cell nuclei blue-purple; **eosin** colours the
+cytoplasm and surrounding material pink. Nearly every pathology slide a
+pathologist first looks at is H&E. *Everyday version:* highlighting a document
+with two colours — one for headings (nuclei), one for body text (everything
+else).
+
+**Stain.** A dye that binds to particular tissue components so they show up
+under the microscope. Tissue is nearly transparent unstained.
+
+**Optical density (OD).** How much light a stained pixel absorbs, rather than
+how bright it looks. Stains *absorb* light, and absorbances add up where two
+stains overlap, while brightnesses do not — so the maths of separating stains
+is done in optical density. *Everyday version:* stacking two coloured filters
+in front of a lamp: each filter removes a fraction of the light, and the
+fractions multiply, which becomes simple addition once you take a logarithm.
+
+**Colour deconvolution.** Separating a stained picture into one channel per
+stain — "how much hematoxylin is here" and "how much eosin is here" — by
+undoing the mixing in optical-density space. The classical way to find nuclei
+in H&E without any learning. *Everyday version:* un-mixing a purple paint back
+into its blue and red.
+
+**Stain vector.** The colour, in optical density, that a pure stain produces.
+Colour deconvolution needs one per stain; they differ between laboratories,
+scanners and batches, which is precisely the variation Track P audits.
+
+**Stain normalisation.** Adjusting a picture so its stains match a reference
+appearance, to reduce the differences between laboratories and scanners.
+Macenko and Vahadane are the two classical methods; learned models exist too.
+Whether normalisation actually reduces *biomarker* variability, and by how
+much, is one of the questions this project asks rather than assumes.
+
+**Scanner variability.** Different slide scanners record the same slide with
+different colours, sharpness and contrast. Together with staining variation it
+is the largest source of avoidable wobble in pathology AI, and a model that has
+only seen one scanner often fails on another.
+
+**Batch effect.** Systematic differences between groups of samples caused by
+*how* they were processed — which day, which laboratory, which scanner — rather
+than by biology. The pathology version of a scale that reads differently in
+the morning. Stain and scanner variability are batch effects.
+
+**IHC (immunohistochemistry).** A stain that marks one specific protein using
+an antibody, so cells expressing that protein change colour. Used to decide
+treatments — HER2 in breast cancer, PD-L1 in several cancers, Ki-67 for how
+fast cells divide. *Everyday version:* a highlighter that only marks one
+particular word wherever it appears.
+
+**Chromogen.** The coloured product that makes an IHC-positive cell visible;
+DAB (brown) is the common one, against a blue hematoxylin counterstain.
+
+**Positive fraction (percent positive).** The share of cells whose IHC signal
+is above threshold. A biomarker, and one whose wobble under stain and scanner
+change is exactly the kind of thing this project measures.
+
+**H-score.** An IHC summary from 0 to 300 combining *how many* cells are
+positive with *how strongly*: 1 × (% weak) + 2 × (% moderate) + 3 × (% strong).
+Used clinically; audited here for stability.
+
+**mIF (multiplex immunofluorescence).** Several antibodies at once, each
+attached to a differently coloured fluorescent dye, so one section shows
+multiple proteins as separate channels. Where H&E gives one picture, mIF gives
+a stack — six, eight, forty channels. Stored as multichannel OME-TIFF.
+
+**Channel.** One "colour" of a multichannel image, usually one marker in mIF.
+The channel *names* (which protein each is) are part of the geometry the
+project never separates from the numbers.
+
+**OME-TIFF.** A standard image format for microscopy that carries the channel
+names, physical pixel size and other metadata inside the file. The pathology
+equivalent of NIfTI carrying voxel spacing.
+
+**Gating.** Deciding, per cell, whether each marker is "on" or "off" by
+thresholding its intensity — then combining the on/off pattern into a cell
+type. *Everyday version:* sorting post by a checklist: has stamp, has address,
+has return label → deliverable.
+
+**Phenotype (cell phenotype).** A cell type defined by which markers it
+expresses — for example CD3⁺CD8⁺ for a cytotoxic T cell. Phenotype *counts and
+densities* are among the most used pathology biomarkers, and among the most
+sensitive to stain and scanner variation.
+
+**Nucleus detection / nucleus segmentation.** Finding every cell nucleus in a
+tile (detection: where are they) or outlining each one (segmentation: exactly
+which pixels). Nuclei are the anchors for counting cells, measuring their shape
+and building cell graphs. The classical route is colour deconvolution plus
+blob finding; the learned route is a pretrained model such as Cellpose.
+
+**Nuclear morphometrics.** Measurements of nucleus shape and size: area,
+eccentricity, solidity. Long used by pathologists by eye; computed here per
+nucleus and audited per tile.
+
+**Tissue segmentation.** Outlining tissue *regions* — tumour, stroma, necrosis,
+background — rather than individual cells. The pathology counterpart of
+outlining a hippocampus.
+
+**Tumour area fraction.** The share of the tissue area that the segmenter
+labels tumour. A region-level biomarker.
+
+**Tumour microenvironment (TME).** Everything around the tumour cells: immune
+cells, blood vessels, supporting tissue. Much of modern oncology asks what the
+microenvironment looks like, which is what spatial statistics measure.
+
+**TIL (tumour-infiltrating lymphocytes).** Immune cells found inside or
+around a tumour; their density is a biomarker linked to treatment response. An
+*immune-infiltration proxy* is any measured stand-in for it, such as
+lymphocyte density near tumour.
+
+**Spatial statistics.** Numbers describing *where* cells are relative to each
+other, not just how many. Nearest-neighbour distance, Ripley's K and the
+neighbourhood enrichment test are the ones used here.
+
+**Nearest-neighbour distance.** For each cell, how far to the closest cell of
+some type. Averaged, it says whether two cell types sit together or apart.
+
+**Ripley's K (and L).** A function of distance that says whether points are
+clustered, random or evenly spread at that distance. *Everyday version:* count
+how many neighbours each house has within 100 m, then 200 m, then 500 m, and
+compare with what a random scatter of houses would give. L is K rescaled so
+that "random" is a straight line, which is easier to read.
+
+**Neighbourhood enrichment.** A test of whether cells of type A are found next
+to cells of type B more (or less) often than chance. The standard way to ask
+"do immune cells crowd around tumour cells here?"
+
+**Interaction counts.** Simply counting the pairs of neighbouring cells by
+type — A next to B, B next to C — the raw material for neighbourhood
+enrichment.
+
+**Cell graph.** The cells of a tile turned into a network: each nucleus a node,
+each pair of nearby nuclei an edge. *Everyday version:* a map of a village
+where every house is a dot and every pair of neighbours is a line. Graphs let
+a model reason about *arrangement*, not just counts.
+
+**Geometric deep learning / graph neural network (GNN).** Neural networks that
+work on graphs rather than grids of pixels. A GNN over a cell graph can
+produce a single number for the whole tile — a graph-level biomarker — that
+depends on how cells are arranged. Audited here for stability like any other
+biomarker.
+
+**Embedding.** A list of numbers a model produces to summarise a picture — a
+few hundred to a few thousand numbers per tile — arranged so that similar
+tiles get similar lists. *Everyday version:* describing a person by ten scores
+(height, age, …) instead of a photograph, so you can compare people by
+arithmetic.
+
+**Representation learning.** Teaching a model to produce good embeddings, so
+that downstream tasks (classification, prediction) can be done with simple
+models on top of them.
+
+**Self-supervised learning.** Training a model on unlabelled pictures by making
+it solve puzzles about them — predict the hidden part, recognise the same tile
+after distortion — so no pathologist has to label anything. This is how
+pathology foundation models are trained.
+
+**Foundation model.** A large model trained once, self-supervised, on an
+enormous collection of images, then reused for many tasks by extracting
+embeddings or fine-tuning. Several exist for pathology; this project does not
+train one, it *audits* them: do their embeddings, and the biomarkers built on
+them, stay put when the stain or scanner changes?
+
+**Embedding drift.** How far a tile's embedding moves under a disturbance. The
+foundation-model version of "how much did the volume wobble".
+
+**Benchmark harness.** A program that runs the same test on several models or
+methods with the same settings and produces one comparison table. Here it
+ranks segmenters and feature extractors by *stability* rather than only by
+accuracy.
+
+**Multimodal.** Using two kinds of data about the same sample together — an
+H&E picture and its IHC counterpart, or a tile and the gene expression measured
+underneath it. A multimodal *model* predicts one from the other or combines
+both.
+
+**Virtual staining / stain translation.** A generative model that turns one
+stain into another — H&E into a predicted IHC, for instance — without doing
+the real stain. Compared here with classical normalisation on one measurable
+criterion: does it reduce biomarker variability?
+
+**Generative model.** A model that produces new pictures (or new versions of a
+picture) rather than a label. Stain translation and synthetic-tile generation
+are the uses here.
+
+**Spatial transcriptomics.** Measuring which genes are active at many
+positions across a tissue section, so gene expression can be laid over the
+picture. *Everyday version:* a map of a city where every neighbourhood is
+annotated with what its residents do for a living.
+
+**Spot.** One measurement position in spatial transcriptomics — in the common
+Visium platform, a circle about 55 µm across containing a few cells, with a
+list of gene counts attached.
+
+**AnnData.** The standard data container for spatial transcriptomics and
+single-cell analysis in Python: a table of measurements plus annotations,
+handled by the scanpy and squidpy libraries.
+
+**Tissue microarray (TMA).** Many small tissue cores from many patients
+arranged on one slide, so they can be stained and scanned together. PLISM is
+built from them.
+
+**Synthetic H&E phantom.** Track P's equivalent of the MRI phantom: a
+generated tile with nuclei drawn as ellipses and coloured through the H&E
+optical-density model, so the number of nuclei, their positions and — for the
+IHC and mIF variants — the positive fraction and phenotype proportions are
+known exactly. Synthetic, labelled as such, and the reason every Track P test
+runs with no download.
+
+**OpenSlide.** The open-source library that reads the many proprietary
+whole-slide formats (each scanner manufacturer has its own). Installed here as
+a self-contained pip package on all three operating systems.
+
+**QuPath.** A widely used open-source desktop program for viewing and
+annotating whole-slide images. The project plans to export its overlays in a
+form QuPath can open.
+
+**DICOM-WSI.** The hospital DICOM standard extended to whole-slide images, so
+pathology can live in the same archives as radiology. On the roadmap.
+
+**OME-Zarr.** A cloud-friendly, chunked format for very large images, the
+successor direction to OME-TIFF for storage at scale. On the roadmap.

@@ -61,13 +61,22 @@ the document is wrong and that is a defect worth fixing immediately.
 7. [Phase 1 — the skeleton ✅](#7-phase-1--the-skeleton-)
 7b. [Phase 1b — the R toolchain ✅](#7b-phase-1b--the-r-toolchain-)
 7c. [Phase 1c — the first release ✅](#7c-phase-1c--the-first-release-)
-8. [Phase 2 — real data ⬜](#8-phase-2--real-data-)
-9. [Phase 3 — the perturbation bank ⬜](#9-phase-3--the-perturbation-bank-)
-10. [Phase 4 — segment, measure, store ⬜](#10-phase-4--segment-measure-store-)
-11. [Phase 5 — the statistics ⬜](#11-phase-5--the-statistics-)
-12. [Phase 6 — the deep segmenter ⬜](#12-phase-6--the-deep-segmenter-)
-13. [Phase 7 — the explorer ⬜](#13-phase-7--the-explorer-)
-14. [Phase 8 — report, release, publish ⬜](#14-phase-8--report-release-publish-)
+7d. [Two tracks, one spine — how the rest is organised](#7d-two-tracks-one-spine--how-the-rest-is-organised)
+7e. [Phase P1a — the synthetic H&E phantom ⬜](#7e-phase-p1a--the-synthetic-he-phantom-)
+8. [Phase V2 — real MRI data ⬜](#8-phase-v2--real-mri-data-)
+8b. [Phase P1 — pathology data and I/O ⬜](#8b-phase-p1--pathology-data-and-io-)
+9. [Phase V3 — the MRI perturbation bank ⬜](#9-phase-v3--the-mri-perturbation-bank-)
+9b. [Phase P2 — the pathology perturbation bank ⬜](#9b-phase-p2--the-pathology-perturbation-bank-)
+10. [Phase V4 — segment, measure, store ⬜](#10-phase-v4--segment-measure-store-)
+10b. [Phase P3 — segment, phenotype, spatial, measure ⬜](#10b-phase-p3--segment-phenotype-spatial-measure-)
+11. [Phase S1 — the statistics, once for both ⬜](#11-phase-s1--the-statistics-once-for-both-)
+12. [Phase V6 — the deep segmenter ⬜](#12-phase-v6--the-deep-segmenter-)
+12b. [Phase P4 — foundation-model embeddings and the benchmark harness ⬜](#12b-phase-p4--foundation-model-embeddings-and-the-benchmark-harness-)
+12c. [Phase P5 — the cell-graph network ⬜](#12c-phase-p5--the-cell-graph-network-)
+12d. [Phase P6 — multimodal ⬜](#12d-phase-p6--multimodal-)
+12e. [Phase P7 — stain normalisation and generative components ⬜](#12e-phase-p7--stain-normalisation-and-generative-components-)
+13. [Phase S2 — the explorer, with a modality switch ⬜](#13-phase-s2--the-explorer-with-a-modality-switch-)
+14. [Phase S3 — report, publication package, container ⬜](#14-phase-s3--report-publication-package-container-)
 
 **Part IV — Keeping it**
 15. [Maintaining this document](#15-maintaining-this-document)
@@ -96,7 +105,7 @@ do. It tells you to weigh yourself weekly rather than daily, and not to
 celebrate a 300 g drop.
 
 **Almost nobody asks this question of medical measurements. That is the gap
-this project fills.**
+this project fills — in two imaging worlds at once.**
 
 ### 1.2 The same problem, in a hospital
 
@@ -111,22 +120,51 @@ slows the shrinking, the trial should see it in this number.
 
 The effects being hunted are small — a few percent of volume per year.
 
+![Stable versus unstable measurement of an unchanged patient](docs/img/repeatability_wobble.png)
+
+*Twelve measurements, patient unchanged. Left: a real change stands clear of
+the instrument's wobble. Right: the same change drowns in it. Every statistic
+this project computes is, one way or another, a measurement of that wobble.*
+
 So: if scanning the same person again next week, on a different machine, with
 slightly different settings, shifts the measured volume by five percent, then
 a three-percent treatment effect is **invisible**. The trial was doomed before
 it enrolled anyone. And teams routinely find this out after the data are in,
 which is the worst possible moment.
 
+### 1.2b The same problem again, on a glass slide
+
+Swap the brain scan for a sliver of tumour on a glass slide, stained purple
+and pink, scanned into a picture with a hundred thousand pixels on a side.
+Software finds every cell nucleus, decides which cells are immune cells,
+counts how many sit next to tumour cells, and reports a density — "so many
+lymphocytes per square millimetre of tumour." That number is a **pathology
+biomarker**, and oncology trials use it to decide who is likely to respond to
+a treatment.
+
+Now stain the same slide again on Tuesday with a slightly different batch of
+dye, or scan it on the machine at another hospital. Nothing about the tissue
+changed. The picture did — a different shade of purple, a little softer focus,
+a different colour response — and the software's density changes with it.
+Every AI model that reports pathology biomarkers inherits that wobble, and
+almost none of them report it.
+
+That is why this project has **two tracks**: the same question asked of a
+3-D radiology volume and of a 2-D pathology tile, answered with the same
+statistics. Section 7d explains how they are organised.
+
 ### 1.3 What StableSeg does about it
 
 It is the software equivalent of stepping on and off the scale two hundred
 times.
 
-Take a real scan. Make many copies, each disturbed in a controlled, realistic
-way — a bit more noise, slight blurring, a small shift as if the patient
-moved, the brightness drift a real scanner produces. **The patient has not
-changed. Only the picture has.** Run the same measuring software on every
-copy. Look at how much the answers disagree.
+Take a real image. Make many copies, each disturbed in a controlled, realistic
+way — for a scan: a bit more noise, slight blurring, a small shift as if the
+patient moved, the brightness drift a real scanner produces; for a slide: a
+shift in the stain's colour, a different scanner's colour response, softer
+focus, a lower magnification. **The patient has not changed. Only the picture
+has.** Run the same measuring software on every copy. Look at how much the
+answers disagree.
 
 That disagreement is the measurement's noise floor. Then convert it into the
 number a scientist can actually act on:
@@ -175,10 +213,14 @@ physical size**, recorded in the file. Perhaps 1 mm on each side. Count the
 voxels inside a structure, multiply by the volume of one voxel, and you have
 the structure's volume in cubic millimetres.
 
-Get that size wrong and every measurement is wrong. A structure of 1,446
-voxels is 1,446 mm³ at 1 mm spacing and 11,568 mm³ at 2 mm — an eightfold
-error from one overlooked number. This is why the code keeps the numbers and
-their physical size welded together and never lets a function separate them.
+Get that size wrong and every measurement is wrong:
+
+![Count voxels, read their physical size, and what happens when the spacing is wrong](docs/img/voxel_volume.png)
+
+A structure of 1,446 voxels is 1,446 mm³ at 1 mm spacing and 11,568 mm³ at
+2 mm — an eightfold error from one overlooked number. This is why the code
+keeps the numbers and their physical size welded together and never lets a
+function separate them.
 
 ### 2.2 Segmentation is tracing an outline
 
@@ -214,6 +256,12 @@ machine was noisier that day, the slices were thicker, the magnetic field
 drifted. Applied one at a time and in combination, they are how a repeat visit
 is simulated when no real repeat visit exists in the data.
 
+![The same phantom slice under four different disturbances](docs/img/perturbation_preview.png)
+
+*A preview of the idea on real generated data (phase 3 builds these properly,
+with physics and parameters): five versions of one slice, and in every one of
+them the "patient" is identical.*
+
 ### 2.5 Reproducibility means the same answer every time
 
 If you delete everything the code produced and run it again, you should get
@@ -239,6 +287,21 @@ version:
   questioned with a language called **SQL**, instead of rummaging through bags
   on the floor.
 
+```mermaid
+flowchart LR
+    P["🧑  person"] -->|clicks| F["🍽️  FRONTEND<br/>the dining room —<br/>what you see and click"]
+    F -->|asks| B["👩‍🍳  BACKEND<br/>the kitchen —<br/>where the work happens"]
+    B -->|fetches from| D[("🗄️  DATABASE<br/>the pantry —<br/>organised storage, asked in SQL")]
+    D -->|returns| B -->|serves| F
+
+    classDef front fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    classDef back fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef store fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    class F front
+    class B back
+    class D store
+```
+
 🔗 Every term here, and about eighty more, with an everyday comparison each:
 [`00-glossary.md`](docs/00-glossary.md).
 
@@ -247,6 +310,9 @@ version:
 ## 3. How the finished tool is shaped
 
 Nine boxes. Data flows one way, top to bottom, and no step edits its own input.
+The diagram below shows one track; the two-track version, with the shared
+spine drawn explicitly, is in
+[`docs/02-architecture.md`](docs/02-architecture.md) and in section 7d.
 
 ```mermaid
 flowchart TD
@@ -427,8 +493,25 @@ copies of the libraries it needs, isolated from your system and from every
 other project. Different projects can then use conflicting versions of the same
 library without fighting.
 
-Like a separate toolbox per job, so plumbing tools do not end up mixed into the
-electrical kit.
+Like a separate toolbox per job, so plumbing tools do not end up mixed into
+the electrical kit:
+
+```mermaid
+flowchart TB
+    subgraph SYS["💻  your computer"]
+        SP["system Python<br/>(the OS uses it — leave it alone)"]
+        subgraph P1["📁 stableseg/"]
+            V1["🧰 .venv<br/>this project's own copies:<br/>numpy 2.5.2, scipy 1.18.1, ..."]
+        end
+        subgraph P2["📁 some-other-project/"]
+            V2["🧰 .venv<br/>different copies, even<br/>different versions — no conflict"]
+        end
+    end
+    classDef sys fill:#F5F5F5,stroke:#BBBBBB,color:#333;
+    classDef box fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    class SP sys
+    class V1,V2 box
+```
 
 **The rule that saves you hours:** every new terminal window starts *without*
 it. Your prompt must show `(.venv)`. If a command fails with "not found",
@@ -518,6 +601,21 @@ A **branch** is a parallel line of snapshots.
 | `master` | The released code. Always working. Tags like `v0.1.0` live here. |
 | `beta` | A pre-release mirror — somewhere to try a build before tagging it. |
 | `develop` | Where every commit is made. **You always work here.** |
+
+```mermaid
+flowchart LR
+    YOU["🧑‍💻 you, always on<br/><b>local develop</b>"] -->|one push| D["origin/develop<br/>the work"]
+    YOU -->|same push| B["origin/beta<br/>pre-release mirror"]
+    YOU -->|same push| M["origin/master<br/>released · 🏷️ v0.1.0, v0.1.1"]
+    M -->|git pull --ff-only| LM["local master<br/>kept in step"]
+
+    classDef work fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef mirror fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    classDef rel fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class YOU,D,LM work
+    class B mirror
+    class M rel
+```
 
 For one person this looks like ceremony. The value is that the habit costs
 nothing now and scales later: a second contributor can work on `develop` while
@@ -811,7 +909,94 @@ spelled out at the end of the
 
 ---
 
-## 8. Phase 2 — real data ⬜
+## 7d. Two tracks, one spine — how the rest is organised
+
+From here on the build runs on two equal tracks that share a spine. The thesis
+is identical on both: *how much does an imaging biomarker move when the sample
+has not changed?*
+
+```mermaid
+flowchart LR
+    subgraph V["🧠  TRACK V — volumetric radiology"]
+        V1["MRI / CT volumes<br/>3-D · millimetres<br/>hippocampal volume"]
+    end
+    subgraph P["🔬  TRACK P — digital pathology"]
+        P1["H&E · IHC · mIF tiles · WSI<br/>2-D · microns<br/>cell densities · positivity · spatial"]
+    end
+    subgraph S["🧮  SHARED SPINE — built once"]
+        S1["settings · storage · geometry base<br/>repeatability statistics + R cross-check<br/>benchmark harness · explorer · report"]
+    end
+    V1 --> S1
+    P1 --> S1
+    S1 --> OUT["minimum detectable change<br/>required sample size"]
+
+    classDef v fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef p fill:#FDE8E8,stroke:#CC3311,color:#5A1010;
+    classDef s fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class V1 v
+    class P1 p
+    class S1,OUT s
+    style V fill:#F5F9FF,stroke:#B9D2FF
+    style P fill:#FFF5F5,stroke:#F2B8B0
+    style S fill:#F2FBF5,stroke:#B7E4C7
+```
+
+| Track | Picture | Scale | Measured | Phases |
+|---|---|---|---|---|
+| **V — Volumetric radiology** | MRI / CT volumes (NIfTI, DICOM) | organs, mm | volume, surface, shape | V2 · V3 · V4 · V6 |
+| **P — Digital pathology** | H&E / IHC / mIF tiles and whole-slide images; spatial-transcriptomics spots | cells, µm | tissue fractions, phenotype densities, IHC positivity, spatial statistics, cell-graph scores, foundation-model embeddings | P1a · P1 · P2 · P3 · P4 · P5 · P6 · P7 |
+| **S — Shared spine** | both | — | the same statistics, storage, explorer, report, benchmark harness | S1 · S2 · S3 |
+
+**The parity rule.** Every release ships a comparable increment on both
+tracks, and every artefact — this guide, the README, the glossary, the
+roadmap, the checks, the explorer, the report — gives them equal weight.
+
+**The order, in one line.** V2 → P1 → V3 → P2 → V4 → P3 → **S1 (0.2.0)** →
+V6 → P4 → P5 → P6 → P7 → **S2 → S3 (0.3.0)** → 0.4.0. The dependency reasoning
+is in [`docs/05-roadmap.md`](docs/05-roadmap.md) section 4; the honest
+estimate is about twenty-nine weekends to 0.3.0.
+
+**Where the datasets are described.** Every real dataset on either track has
+a [data card](docs/data-cards/README.md) — source, licence, size, what it is
+used for, and what it cannot show — written before its download script.
+
+🔗 [`docs/05-roadmap.md`](docs/05-roadmap.md) · [`docs/02-architecture.md`](docs/02-architecture.md) · [`docs/data-cards/README.md`](docs/data-cards/README.md)
+
+---
+
+## 7e. Phase P1a — the synthetic H&E phantom ⬜
+
+**Status: next.** Track P's first piece of code, and the smallest phase in the
+project.
+
+### What it is
+
+Track P's equivalent of the MRI phantom: a generated tile where cell nuclei
+are drawn as ellipses and coloured through the hematoxylin-and-eosin
+optical-density model, so the number of nuclei, their positions and sizes are
+known exactly. Seeded, deterministic, labelled `synthetic: true`, and produced
+by `src/stableseg/pathology/phantom.py` mirroring `src/stableseg/phantom.py`.
+
+### Why first, before any real slide
+
+For the same reason the MRI phantom came first: every Track P test needs data
+that is always there, needs no download, and has an answer key. A real tile has
+a pathologist's opinion about how many nuclei it contains; a phantom has
+arithmetic. That answer key is what the nucleus detector will be checked
+against before it is trusted on anything real.
+
+### What you will understand afterwards
+
+What H&E staining is and why nuclei are purple. Why stains are mixed in
+optical density rather than brightness. How a known-truth tile is built.
+
+### 🔗 The detail
+
+`docs/04-phase-tutorials/phase-P1a-he-phantom.md` — arrives with the phase.
+
+---
+
+## 8. Phase V2 — real MRI data ⬜
 
 ### What it is
 
@@ -849,7 +1034,43 @@ and the outline volumes fall in the range published for hippocampal volume.
 
 ---
 
-## 9. Phase 3 — the perturbation bank ⬜
+## 8b. Phase P1 — pathology data and I/O ⬜
+
+### What it is
+
+The shared geometry base, `image.py`, so a 2-D RGB tile, a multichannel
+OME-TIFF and a 3-D volume all carry their geometry — microns per pixel or
+voxel spacing, magnification level, channel names — and no function can
+separate the numbers from it. `Volume` keeps its name and import path, so the
+existing checks are untouched. Readers for whole-slide formats (OpenSlide,
+installed as a self-contained pip package on all three systems), pyramidal
+and OME-TIFF (tifffile), and spatial-transcriptomics tables (AnnData). The
+synthetic IHC channel with known positive fraction and the synthetic mIF
+phantom with known phenotype proportions, completing the phantom family
+begun in P1a. Download scripts and [data cards](docs/data-cards/README.md)
+for every real dataset. One real whole-slide image streamed as tiles.
+
+### Why here
+
+You cannot write a realistic stain disturbance without a real tile to
+disturb. And the geometry rule must exist before any pathology number is
+computed, or the first magnification mix-up silently corrupts a result.
+
+### What you will understand afterwards
+
+What a whole-slide image is and why nobody loads all of it. What a pyramid
+is. What microns-per-pixel means and why it is the pathology voxel spacing.
+What the `[pathology]` extra installs and why the core stays light.
+
+### 🔗 The detail
+
+`docs/04-phase-tutorials/phase-P1-pathology-data.md` — arrives with the phase.
+Setup additions for the pathology extra go into all three OS guides, with the
+platform differences called out.
+
+---
+
+## 9. Phase V3 — the MRI perturbation bank ⬜
 
 ### What it is
 
@@ -875,7 +1096,40 @@ repeated exactly.
 
 ---
 
-## 10. Phase 4 — segment, measure, store ⬜
+## 9b. Phase P2 — the pathology perturbation bank ⬜
+
+### What it is
+
+A third modality profile beside MRI and CT. Stain-vector shifts in
+optical-density space (Macenko and Vahadane style), stain intensity and hue
+drift, simulated scanner colour response, JPEG compression, focus blur,
+magnification and resolution change, rotation and flips, illumination
+gradients, and tissue-fold and pen-mark artefacts where feasible. Each one
+documented with the real-world cause it imitates, exactly as the MRI profile
+is.
+
+### Why it is the credibility step
+
+Track P has a real test–retest dataset — the same tissue under seven scanners
+and thirteen stains ([PLISM data card](docs/data-cards/plism.md)). Every
+disturbance in this bank is tuned so that the wobble it produces matches the
+wobble those real pairs show. That is the difference between a simulation
+someone made up and a simulation someone checked.
+
+### What you will understand afterwards
+
+Why stain variation is mixed in optical density. What a scanner's colour
+response is. Why a simulated disturbance needs a real one to be measured
+against.
+
+### 🔗 The detail
+
+`docs/04-phase-tutorials/phase-P2-pathology-perturbation-bank.md` — arrives
+with the phase.
+
+---
+
+## 10. Phase V4 — segment, measure, store ⬜
 
 ### What it is
 
@@ -911,7 +1165,43 @@ projects.
 
 ---
 
-## 11. Phase 5 — the statistics ⬜
+## 10b. Phase P3 — segment, phenotype, spatial, measure ⬜
+
+### What it is
+
+Classical tissue segmentation (colour deconvolution, thresholding,
+morphology). Nucleus detection two ways: a classical detector, and a
+pretrained model that runs on a CPU (Cellpose — code freely licensed, weights
+trained on non-commercially licensed data, stated on every output). IHC
+positivity — percent positive and H-score — on paired breast data
+([BCI](docs/data-cards/bci.md)). Marker gating into phenotypes on mIF. Per-tile
+and per-region biomarkers: tumour area fraction, cell density per phenotype,
+nuclear morphometrics, immune-infiltration proxies. Spatial statistics:
+nearest-neighbour distances, Ripley's K and L, neighbourhood enrichment,
+interaction counts. A cell-graph builder. All written to the same tables as
+Track V, with a `modality` column.
+
+### Why here
+
+Everything downstream on Track P — the statistics, the foundation-model
+benchmark, the graph network, the multimodal component — reads this table.
+It is the largest Track P phase, and it is deliberately classical-first: a
+foundation model that cannot beat colour deconvolution on *stability* has not
+earned its complexity.
+
+### What you will understand afterwards
+
+What a phenotype is and how gating decides one. What Ripley's K measures.
+What a cell graph is. Why "how many" and "where" are different biomarkers.
+
+### 🔗 The detail
+
+`docs/04-phase-tutorials/phase-P3-segment-phenotype-spatial.md` — arrives
+with the phase.
+
+---
+
+## 11. Phase S1 — the statistics, once for both ⬜
 
 ### What it is
 
@@ -929,6 +1219,18 @@ What exactly is being repeated? Those questions decide whether the numbers mean
 anything, and no library answers them for you.
 
 This is where you slow down and think.
+
+### Why once, for both tracks
+
+Because the question is the same. A radiology volume and a pathology density
+are both numbers measured repeatedly on an unchanged sample, and the agreement
+statistics do not care which. One implementation, one R cross-check, one
+worked example per statistic — serving both tracks, and shown side by side in
+the same report. Building it twice would be building it wrong twice.
+
+This is also where Track P's real test–retest earns its keep: the simulated
+wobble and the real cross-scanner wobble are computed by the same code and
+compared in the same table.
 
 ### Where R and RStudio come in
 
@@ -962,7 +1264,7 @@ than one careful one.
 
 ---
 
-## 12. Phase 6 — the deep segmenter ⬜
+## 12. Phase V6 — the deep segmenter ⬜
 
 ### What it is
 
@@ -988,14 +1290,82 @@ asked until both a simple and a sophisticated segmenter exist side by side.
 
 ---
 
-## 13. Phase 7 — the explorer ⬜
+## 12b. Phase P4 — foundation-model embeddings and the benchmark harness ⬜
+
+### What it is
+
+Embeddings — the few-hundred-number summaries a model produces for a tile —
+from two openly downloadable pathology foundation models (H0-mini, and
+Phikon-v2 under its non-commercial licence) plus a generic ImageNet-trained
+backbone as the control that shows whether the pathology models earn their
+place. Under the perturbation bank, two things are measured: how far the
+embedding itself drifts, and how far the biomarker built on it drifts. A
+config-driven harness in `benchmarks/` ranks every extractor and segmenter by
+*stability*, and the README reproduces its table. Self-supervised pretraining
+is a documented optional path on rented hardware, never a laptop requirement.
+The harness is shared: Track V's deep segmenter is scored by it too.
+
+### Why the benchmark is different
+
+Robustness benchmarks of pathology foundation models exist and are cited. This
+one's unit of analysis is the *downstream biomarker*, expressed as a minimum
+detectable change a trial could use — not the similarity between two
+embeddings. Where the two views agree, that is evidence; where they disagree,
+the disagreement is reported.
+
+### 🔗 The detail
+
+`docs/04-phase-tutorials/phase-P4-foundation-models-and-benchmark.md` —
+arrives with the phase.
+
+---
+
+## 12c. Phase P5 — the cell-graph network ⬜
+
+A small graph neural network (PyTorch Geometric, optional `[graph]` extra) over
+the cell graphs built in P3, producing a graph-level biomarker whose stability
+is audited like every other. Trainable on a CPU on tiles in minutes; the GPU
+path stated. Geometric deep learning, audited rather than demonstrated.
+
+🔗 `docs/04-phase-tutorials/phase-P5-cell-graph-network.md` — arrives with the phase.
+
+---
+
+## 12d. Phase P6 — multimodal ⬜
+
+One paired component two ways: H&E → IHC on registered consecutive sections
+([BCI](docs/data-cards/bci.md)), and H&E tile → spatial-transcriptomics spot
+expression (a Visium sample via squidpy). The audit asks the only question it
+knows how to ask: is the cross-modal prediction stable under the perturbation
+bank?
+
+🔗 `docs/04-phase-tutorials/phase-P6-multimodal.md` — arrives with the phase.
+
+---
+
+## 12e. Phase P7 — stain normalisation and generative components ⬜
+
+Classical stain normalisation (Macenko, Vahadane) as the baseline; a learned
+stain-normalisation or translation model as the optional comparison
+(pretrained if openly available, otherwise a documented path on rented
+hardware); synthetic-tile generation as a documented use of the phantom
+family. The whole phase exists to answer one measurable question: **does
+normalisation reduce biomarker variability, and by how much?**
+
+🔗 `docs/04-phase-tutorials/phase-P7-stain-normalisation.md` — arrives with the phase.
+
+---
+
+## 13. Phase S2 — the explorer, with a modality switch ⬜
 
 ### What it is
 
 A web page built with **Streamlit**, which turns a Python script into an
-interactive page with no web code at all. Pick a disturbance, watch the
-measurement distribution move, see which cases are unreliable, use the
-sample-size calculator.
+interactive page with no web code at all. A **modality switch** at the top:
+radiology or pathology. Pick a disturbance, watch the measurement distribution
+move, see which cases or tiles are least stable, use the sample-size
+calculator. For pathologists: overlays, phenotype maps, and a review sheet of
+the least stable tiles.
 
 Likely also a read-only SQL console, as the sibling project has — so a curious
 user can ask their own questions of the results rather than only the ones you
@@ -1015,14 +1385,18 @@ that keeps it inside a free tier's memory limits.
 
 ---
 
-## 14. Phase 8 — report, release, publish ⬜
+## 14. Phase S3 — report, publication package, container ⬜
 
 ### What it is
 
 A document that **regenerates itself** from the database — methods, figures,
-tables, the minimum detectable change, and the honest limitations — built with
-**Quarto**, which weaves text, code and the code's output into one polished
-file. Then the `1.0` release.
+tables, the minimum detectable change, and the honest limitations — for
+**both tracks**, built with **Quarto**, which weaves text, code and the code's
+output into one polished file. Beside it, `docs/07-publication-package/`: a
+manuscript skeleton, a conference abstract template, `CITATION.cff` so the
+work can be cited, and a Zenodo DOI entry — nothing in it claiming a result
+the repository cannot reproduce. Overlays exported in a form QuPath can open.
+The container image. Then the `1.0` line is in sight.
 
 ### Why a report as well as a page
 
@@ -1037,8 +1411,11 @@ Three, and stating them plainly is what makes the rest credible:
 1. The phantoms are **synthetic**.
 2. The repeat scans are **simulated**, not second visits — the disturbances are
    realistic and documented, but they are not a person returning next week.
-3. A model trained on a few hundred cases demonstrates **workflow competence,
-   not clinical performance**.
+3. A model trained on a few hundred cases or tiles demonstrates **workflow
+   competence, not clinical performance**.
+4. On Track P, the multi-scanner and multi-stain dataset is the only **real**
+   test–retest and is described as such; non-commercial dataset and model
+   licences are stated wherever their outputs appear.
 
 🔗 The publishing checklist: [`HOSTING.md`](docs/HOSTING.md), section 6.
 
@@ -1139,8 +1516,9 @@ Which document to open, and when.
 
 ## Where you are now
 
-Phase 1 is built. Six of eight phases remain, and the honest estimate is eight
-to twelve weekends.
+Phase 1 is built, released twice, and verified. Ahead lie two tracks that
+share a spine — seven radiology and pathology phases each, three shared —
+and the honest estimate is about twenty-nine weekends to 0.3.0.
 
 If you have followed Part II, you have a working scientific tool on your
 machine, published to the internet, with automated verification on three

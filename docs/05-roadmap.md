@@ -1,15 +1,17 @@
-# 05 · Roadmap: what comes after 0.1.0
+# 05 · Roadmap: what comes after 0.1.x, on both tracks
 
-[← README](../README.md) · [All docs in order](../README.md#the-tutorial-in-order) · [Glossary](00-glossary.md) · [Architecture](02-architecture.md)
+[← README](../README.md) · [Build guide](../BUILD_GUIDE.md) · [Glossary](00-glossary.md) · [Architecture](02-architecture.md) · [Product roadmap](06-product-and-technology-roadmap.md)
 
 **Prerequisites:** none, though [`02-architecture.md`](02-architecture.md) makes
 the phase names mean something.
 **Learning goal:** after this page you know what is built, what is not, in what
-order the rest arrives, and — more useful than the list itself — *why* that
-order. Sequencing work is a skill, and this page shows the reasoning rather
-than just the outcome.
-**Checkpoint:** you can say which phase must come before the deep-learning
-segmenter, and why building the app early would have been a mistake.
+order the rest arrives on **both tracks**, and — more useful than the list
+itself — *why* that order. Sequencing work across two parallel tracks that
+share a spine is a skill, and this page shows the reasoning rather than just
+the outcome.
+**Checkpoint:** you can say which pathology phase must come before the
+foundation-model benchmark, why the statistics module is built exactly once,
+and what the parity rule forbids.
 
 ---
 
@@ -18,25 +20,26 @@ segmenter, and why building the app early would have been a mistake.
 Two reasons, and both are practical.
 
 **It is a promise you can be held to.** A project that says "coming soon" about
-everything is unfalsifiable. A project that says "0.2.0 adds real MRI, the
-perturbation bank, the classical segmenter and the first repeatability
-statistics" can be checked against reality later. Writing it down makes the
-work honest.
+everything is unfalsifiable. A project that says "0.2.0 ships the radiology
+perturbation bank *and* the pathology perturbation bank, both feeding one
+statistics module" can be checked against reality later. Writing it down makes
+the work honest.
 
 **It stops you building the wrong thing next.** Everyone's instinct on a
 project like this is to build the interesting part first — the neural network,
-the dashboard. Both would have been mistakes here, for reasons explained
-below. Deciding the order once, in writing, means you do not re-litigate it
-every weekend.
+the foundation model, the dashboard. All three would have been mistakes here,
+for reasons explained below. Deciding the order once, in writing, means you do
+not re-litigate it every weekend.
 
-Think of it like building a house. The instinct is to choose the kitchen
-worktop, because that is the part you can picture. But the foundation, the
-frame and the plumbing come first, and each one constrains the next. A roadmap
-is the build sequence written down before enthusiasm rearranges it.
+Think of it like building a house with two wings on one foundation. The
+instinct is to choose the kitchen worktop, because that is the part you can
+picture. But the foundation, the frame and the plumbing come first — and when
+two wings share plumbing, the plumbing is built once, in the middle, before
+either wing's walls go up.
 
 ---
 
-## 2. Where the project stands: version 0.1.0
+## 2. Where the project stands: version 0.1.x
 
 **Released.** Everything below works, is tested, and runs on Windows, macOS
 and Linux with Python 3.12 or 3.13.
@@ -48,145 +51,223 @@ and Linux with Python 3.12 or 3.13.
 | Storage layer with a provenance stamp on every run | `storage.py` |
 | 3-D image loading that never separates the numbers from their geometry | `io.py` |
 | The first biomarker: label volume in cubic millimetres | `io.label_volume_mm3` |
-| Deterministic synthetic phantom generator with known true volumes | `phantom.py` |
+| Deterministic synthetic MRI phantom generator with known true volumes | `phantom.py` |
 | Command-line tool: `version`, `describe`, `phantom`, `validate-config` | `cli.py` |
 | 38 automated checks, no download needed, under a second | `tests/` |
 | Automated checks on 3 operating systems × 2 Python versions | `.github/workflows/ci.yml` |
 | Pre-push safety check for credentials, oversized files, private paths | `scripts/preflight.py` |
-| The complete beginner tutorial | `docs/` |
+| R toolchain verified against the Python reference value | `R/verify_setup.R` |
+| The complete beginner tutorial, with illustrations | `docs/`, `BUILD_GUIDE.md` |
 
-**What does not exist yet.** No real scan has been loaded. Nothing has been
-perturbed, segmented or measured. There is no statistics module, no app, no
-report. Version 0.1.0 is the frame of the house, not the house.
+**What does not exist yet.** No real scan has been loaded, on either track.
+Nothing has been perturbed, segmented or measured. There is no statistics
+module, no app, no report. Version 0.1.x is the frame of the house, not the
+house.
 
-That is deliberate and worth defending: every later phase writes its outputs
-through the storage layer, describes itself in the settings file, and is
-driven through the same function layer. Building those first means no phase
-has to be rewritten when the next one arrives.
+That is deliberate and worth defending: every later phase — on both tracks —
+writes its outputs through the storage layer, describes itself in the settings
+file, and is driven through the same function layer. Building those first
+means no phase has to be rewritten when the next one arrives.
 
 ---
 
-## 3. The order, and the reason for it
+## 3. Two tracks, one spine
 
-Read this as a dependency chain. Each phase needs the one before it.
+From 0.2.0 onward the project has two equal tracks and a shared spine. The
+thesis is identical on both: *how much does an imaging biomarker move when the
+sample has not changed?*
 
+```mermaid
+flowchart LR
+    subgraph V["🧠  TRACK V — volumetric radiology"]
+        V1["MRI / CT volumes<br/>3-D · millimetres"]
+    end
+    subgraph P["🔬  TRACK P — digital pathology"]
+        P1["H&E · IHC · mIF tiles<br/>spatial transcriptomics<br/>2-D · microns"]
+    end
+    subgraph S["🧮  SHARED SPINE — built once"]
+        S1["settings · storage · geometry base<br/>repeatability statistics<br/>benchmark harness · explorer · report"]
+    end
+    V1 --> S1
+    P1 --> S1
+    S1 --> OUT["minimum detectable change<br/>required sample size"]
+
+    classDef v fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef p fill:#FDE8E8,stroke:#CC3311,color:#5A1010;
+    classDef s fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class V1 v
+    class P1 p
+    class S1,OUT s
+    style V fill:#F5F9FF,stroke:#B9D2FF
+    style P fill:#FFF5F5,stroke:#F2B8B0
+    style S fill:#F2FBF5,stroke:#B7E4C7
 ```
-2 real data ──► 3 perturbations ──► 4 segment & measure ──► 5 statistics
-                                            │                      │
-                                            │                      ├──► 7 explorer
-                                            └──► 6 deep segmenter  └──► 8 report
+
+| Track | What the picture is | What is measured | Why it is here |
+|---|---|---|---|
+| **V — Volumetric radiology** | MRI and CT volumes: 3-D stacks of slices in millimetres (NIfTI, DICOM) | volume, surface area, shape of a traced structure | the original question: scan–rescan repeatability of a trial endpoint such as hippocampal volume |
+| **P — Digital pathology** | H&E, IHC and multiplex-immunofluorescence tiles and whole-slide images; spatial-transcriptomics spots: 2-D pictures in microns | tissue fractions, cell densities per phenotype, IHC positivity, spatial statistics, cell-graph scores, foundation-model embeddings | the same question at cell scale: the same slide, restained or rescanned elsewhere, gives a different number — and every model inherits that wobble |
+| **S — Shared spine** | — | the *same* statistics: ICC, within-subject CV, Bland–Altman, repeatability coefficient, minimum detectable change, sample size | one implementation, cross-checked once in R, serving both tracks |
+
+**The parity rule.** The two tracks carry equal weight in every artefact —
+README, architecture, glossary, roadmap, checks, explorer, report, changelog.
+Every release ships a comparable increment on both. If a piece of work would
+be too large to give both tracks their due, it is split; length pressure is
+never resolved by thinning one track.
+
+**What Track P has that Track V does not, yet.** A *real* test–retest
+dataset: the same tissue digitised under seven scanners and thirteen staining
+conditions ([data card](data-cards/plism.md)). Track P's simulated
+disturbances can therefore be checked against real ones. Track V's repeat
+scans remain simulated until a public same-subject repeat-imaging set is
+adopted (section 7).
+
+---
+
+## 4. The order, and the reason for it
+
+Read this as a dependency graph. Each phase needs the ones pointing into it.
+
+```mermaid
+flowchart LR
+    V2["V2 real MRI<br/>+ DICOM"] --> V3["V3 MRI<br/>perturbation bank"] --> V4["V4 segment<br/>& measure"] --> S1["S1 statistics<br/>+ R cross-check"]
+    P1["P1 pathology data<br/>I/O · phantoms"] --> P2["P2 pathology<br/>perturbation bank"] --> P3["P3 segment · phenotype<br/>spatial · measure"] --> S1
+    S1 --> V6["V6 deep<br/>segmenter"]
+    S1 --> P4["P4 foundation-model<br/>embeddings + harness"]
+    P3 --> P5["P5 cell-graph<br/>network"]
+    P3 --> P6["P6 multimodal"]
+    P2 --> P7["P7 stain normalisation<br/>· generative"]
+    S1 --> S2["S2 explorer"]
+    S2 --> S3["S3 report · publication<br/>· container"]
+
+    classDef v fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef p fill:#FDE8E8,stroke:#CC3311,color:#5A1010;
+    classDef s fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class V2,V3,V4,V6 v
+    class P1,P2,P3,P4,P5,P6,P7 p
+    class S1,S2,S3 s
 ```
 
-**Why data before perturbations.** You cannot write a realistic disturbance
-without a real image to disturb. The phantoms are useful for testing the
-machinery, but a noise level that looks plausible on a generated ellipsoid may
-be absurd on an actual brain scan. Build the thing you are simulating first.
+**Why data before perturbations, on both tracks.** You cannot write a
+realistic disturbance without a real image to disturb. A noise level that
+looks plausible on a generated ellipsoid may be absurd on a brain; a stain
+shift that looks plausible on a synthetic tile may be absurd on real
+colorectal tissue. Build the thing you are simulating first.
 
-**Why perturbations before segmentation.** This is the one that surprises
-people. The obvious order is "train the model, then test it". But the
-perturbation bank is the *contribution* of this project, and the segmenter is
-a component it consumes. Building the bank first forces the segmenter to be
-pluggable from the start — the audit calls `segment(volume) -> mask` and does
+**Why perturbations before segmentation, on both tracks.** This is the one
+that surprises people. The obvious order is "build the model, then test it".
+But the disturbance bank is the *contribution*, and the segmenter is a
+component it consumes. Building the bank first forces the segmenter to be
+pluggable from the start — the audit calls `segment(image) -> mask` and does
 not care what is behind it. Build it the other way round and the audit ends up
 welded to one particular model, which is precisely the thing it must not be.
 
-**Why a classical segmenter before a neural network.** Two reasons. First, a
-threshold-and-morphology baseline is fifty lines of code with no training, so
-the whole pipeline can run end to end weeks before any model exists — and a
-pipeline you can run is a pipeline you can debug. Second, it is the honest
-comparison: a deep model that cannot beat thresholding on this task has not
-earned its complexity. Most projects never check.
+**Why a classical method before a neural network or a foundation model.** A
+threshold-and-morphology baseline (radiology) or a colour-deconvolution
+baseline (pathology) is a few dozen lines with no training, so the whole
+pipeline runs end to end weeks before any model exists — and a pipeline you
+can run is a pipeline you can debug. It is also the honest comparison: a model
+that cannot beat the classical baseline on *stability* has not earned its
+complexity. Most projects never check.
 
-**Why statistics before the app.** The app displays the statistics. Building
-the display first means guessing at what it will display, then rebuilding it.
-More subtly: if the statistics turn out to say something unexpected, the app's
-whole shape changes. Let the answer decide the interface.
+**Why the statistics module is built exactly once, after both tracks have a
+biomarker table.** It is the verdict for both. Building it twice would be
+building it wrong twice. Building it before either track has real numbers to
+feed it means guessing at the table shape, then rebuilding.
 
-**Why the report at the end.** A report is a snapshot of finished work. There
-is nothing to snapshot yet.
-
----
-
-## 4. Version 0.2.0 — the audit actually runs
-
-**Goal:** a complete measurement-system audit on real MRI, start to finish, on
-a laptop, with no neural network involved.
-
-| Phase | What it adds | Why it matters |
-|---|---|---|
-| **2 · Real data** | Download and load the Medical Segmentation Decathlon hippocampus set (394 real T1 brain MRI volumes, 263 with expert outlines, about 36 MB, freely licensed). A reader for DICOM, the hospital format, tested against a small generated series so no patient data is needed. Metadata carried through into provenance. | The audit question is only meaningful on real anatomy. DICOM support is what lets the tool meet data as hospitals actually store it. |
-| **3 · Perturbation bank** | Named, adjustable disturbances organised by **modality profile**: for MRI — added noise, blur, intensity scaling, smooth brightness drift, small rotation and shift, anisotropic resampling. Each one documented with the real-world cause it imitates. | This is the heart of the project. Without it there is no simulated repeat scan. |
-| **4 · Segment and measure** | Preprocessing (orientation, resampling, intensity normalisation), a classical segmenter, biomarker extraction (volume, surface area, sphericity), all written into a single-file database. | Turns images into a table of numbers — the raw material for every statistic that follows. |
-| **5 · Repeatability statistics** | The agreement statistics, each implemented explicitly and checked against a worked example: intraclass correlation, within-subject coefficient of variation, Bland–Altman limits, repeatability coefficient, minimum detectable change, bootstrap confidence intervals. Plus the sample-size calculator. An independent cross-check of the intraclass correlation written in R must agree to four decimal places. | The verdict. This is where the project answers its own question. |
-
-**Also in 0.2.0:** a CT perturbation profile, so the modality-aware design is
-demonstrated rather than merely claimed; a container image, so the whole
-environment can be reproduced anywhere in one command; and `QUERY_COOKBOOK.md`
-— tested, explained SQL against the results database, including multi-part
-queries, following the same convention as the sibling projects.
-
-**On R and RStudio.** The statistics phase adds an `R/` folder, `renv` for
-exact R package versions, and an independent implementation of the agreement
-statistics using the established R packages (`irr`, `psych`, `blandr`). The two
-implementations must agree to four decimal places. This is not duplicated work
-for its own sake: two unrelated implementations agreeing is a far stronger
-check on a formula than one careful implementation, and it is a check most
-projects skip. RStudio is the natural editor for that side and runs on all
-three supported systems. The R side stays optional throughout, so the project
-remains fully usable Python-only.
-
-**Honest expectation:** four weekends, and the statistics phase is the hard
-one. Not because the formulas are difficult — they are arithmetic — but
-because getting the *experimental design* right is subtle. Which cases are
-independent? What exactly is being repeated? Those questions decide whether the
-numbers mean anything, and no library answers them for you.
+**Why the explorer and report come last.** They display the statistics.
+Build them first and you are guessing what they will display.
 
 ---
 
-## 5. Version 0.3.0 — the modern layer
+## 5. Version 0.2.0 — the audit actually runs, on both tracks
 
-**Goal:** the deep-learning segmenter, the interactive explorer, and the
-report.
+**Goal:** a complete measurement-system audit, start to finish, on a laptop
+with no graphics card, on real MRI *and* on real H&E / IHC / mIF tiles — with
+no neural network involved yet.
 
-| Phase | What it adds | Why it matters |
-|---|---|---|
-| **6 · Deep segmenter** | A 3D U-Net (the standard neural network design for medical image outlining) trained with MONAI, the medical-imaging toolkit. Physics-grade MRI artefacts — simulated patient movement, ghosting, magnetic-field distortion — via TorchIO. Both arrive as an optional add-on, so the audit engine still installs and runs without them. | The comparison the project exists to enable: does the modern model produce a *more stable* measurement than the simple one, not just a more accurate one? |
-| **7 · Explorer** | A web page (built with Streamlit, which turns a Python script into an interactive page) where you pick a disturbance and watch the biomarker distribution move, list the cases whose measurement is unreliable, and use the sample-size calculator. | A person who does not write code should be able to ask "what if the scanner were noisier?" |
-| **8 · Report and release** | A document that regenerates itself from the database: methods, figures, tables, the minimum detectable change, and the stated limitations. Then the 1.0 release. | An audit that produces no readable record is not an audit. |
+| Phase | Track | What it adds | Why it matters |
+|---|---|---|---|
+| **V2 · Real data** | V | Download and load the Medical Segmentation Decathlon hippocampus set (394 real T1 brain MRI volumes, 263 with expert outlines, ~36 MB, freely licensed) with checksum verification. A DICOM reader tested against a small series generated by code, so hospital-format support needs no patient data. [Data card](data-cards/msd-hippocampus.md). | The audit question is only meaningful on real anatomy. |
+| **P1 · Pathology data & I/O** | P | The shared geometry base (`image.py`) so a 2-D RGB tile, a multichannel OME-TIFF and a 3-D volume all carry their geometry without ever separating numbers from it. Readers for whole-slide formats (OpenSlide), pyramidal and OME-TIFF (tifffile), and spatial-transcriptomics tables (AnnData). A deterministic **synthetic H&E phantom** (nuclei as ellipses with hematoxylin/eosin optical-density colouring, known counts — landed first, as P1a), a synthetic IHC channel with known positive fraction, and a synthetic multichannel mIF phantom with known phenotype proportions — so every test runs with no download. Download scripts and data cards for every real dataset ([PLISM](data-cards/plism.md), [canine multi-scanner](data-cards/canine-multiscanner-scc.md), [colorectal tiles](data-cards/nct-crc-he.md), [PanNuke](data-cards/pannuke.md), [BCI](data-cards/bci.md)). One real whole-slide image streamed as tiles. | Same reason as V2. Establishes the geometry rule for 2-D and the `[pathology]` extra. |
+| **V3 · MRI perturbation bank** | V | Named, adjustable disturbances organised by **modality profile**: noise, blur, intensity scaling, smooth brightness drift, small rotation and shift, anisotropic resampling. Each documented with the real-world cause it imitates. | The heart of Track V. |
+| **P2 · Pathology perturbation bank** | P | A third modality profile beside MRI and CT: stain-vector shifts in optical-density space (Macenko/Vahadane style), stain intensity and hue drift, simulated scanner colour response, JPEG compression, focus blur, magnification and resolution change, rotation and flips, illumination gradients, tissue-fold and pen-mark artefacts where feasible. Each documented with its real-world cause. **Validated against the real scanner/stain pairs in PLISM** — the step that makes the simulation credible. | The heart of Track P. |
+| **V4 · Segment & measure** | V | Preprocessing (orientation, resampling, intensity normalisation), a classical segmenter, biomarker extraction (volume, surface area, sphericity), written into the single-file database with a `modality` column. | Turns images into the table every statistic reads. |
+| **P3 · Segment · phenotype · spatial · measure** | P | Classical tissue segmentation (colour deconvolution + thresholding + morphology); a pretrained nucleus detector/segmenter that runs on CPU (Cellpose) beside a classical detector; IHC positivity (percent positive, H-score); mIF marker gating into phenotypes; per-tile and per-region biomarkers (tumour area fraction, cell density per phenotype, nuclear morphometrics, immune-infiltration proxies); spatial statistics (nearest-neighbour distances, Ripley's K/L, neighbourhood enrichment, interaction counts); a cell-graph builder. All into the same tables as Track V. | Everything downstream on Track P needs this table. |
+| **S1 · Repeatability statistics + R cross-check** | S | The agreement statistics, each implemented explicitly and checked against a worked example: intraclass correlation, within-subject coefficient of variation, Bland–Altman limits, repeatability coefficient, minimum detectable change, bootstrap confidence intervals; the sample-size calculator. An independent R implementation (`irr`, `psych`, `blandr`) must agree to four decimal places. The PLISM real-versus-simulated comparison. `QUERY_COOKBOOK.md` with tested SQL against the store. | The verdict, for both tracks, once. |
 
-**Also in 0.3.0:** import adapters, so outlines exported from other imaging
-tools can be audited without retraining anything. That is the step that turns
-StableSeg from a demonstration into something another person can point at
-their own work.
+**Also in 0.2.0:** a CT perturbation profile; a container image; pre-release
+tags (`v0.2.0b1`, `b2`, `b3`) on the `beta` branch after each V/P pair lands,
+so intermediate states are citable.
+
+**Honest expectation:** about fourteen weekends at four to five hours a week.
+The statistics phase and the pathology segmentation phase are the hard ones —
+not because the formulas are difficult, but because the *experimental design*
+is subtle. Which tiles count as independent? What exactly is being repeated?
+Those questions decide whether the numbers mean anything, and no library
+answers them for you.
 
 ---
 
-## 6. Version 0.4.0 and beyond — deliberately vaguer
+## 6. Version 0.3.0 — the modern layer, on both tracks
 
-Further out, so stated with less confidence. Each of these is judged properly,
-with a verdict and the trigger that would change it, in
+**Goal:** deep learning, foundation models, geometric and multimodal
+components, the interactive explorer, the report, and the publication package.
+
+| Phase | Track | What it adds | Why it matters |
+|---|---|---|---|
+| **V6 · Deep segmenter** | V | A 3D U-Net trained with MONAI; physics-grade MRI artefacts via TorchIO. Optional `[deep]` extra. Compared with the classical baseline on *stability*, not only overlap. | The comparison Track V exists to enable. |
+| **P4 · Foundation-model embeddings + benchmark harness (S4)** | P/S | Embeddings from two openly downloadable pathology foundation models (H0-mini; Phikon-v2, non-commercial licence stated) plus a generic ImageNet backbone as control. Embedding drift and downstream-biomarker drift under the perturbation bank; extractors ranked by stability. A `benchmarks/` folder with a config-driven harness and a results table the README reproduces. Self-supervised pretraining as a documented optional Colab path. The harness is shared: V6 uses it too. | The benchmark that distinguishes this project from embedding-similarity benchmarks: the unit is the *biomarker*, expressed as an MDC. |
+| **P5 · Cell-graph network** | P | A small graph neural network over cell graphs (PyTorch Geometric, optional `[graph]` extra) producing a graph-level biomarker, audited like every other. CPU-trainable on tiles in minutes; GPU path stated. | Geometric deep learning, audited rather than demonstrated. |
+| **P6 · Multimodal** | P | One paired component: H&E → IHC on paired data (BCI), and H&E tile → spatial-transcriptomics spot expression (Visium via squidpy). The audit asks whether the cross-modal prediction is stable under the perturbation bank. | Multimodal learning, audited. |
+| **P7 · Stain normalisation & generative** | P | Classical stain normalisation (Macenko / Vahadane) as the baseline; a learned stain-normalisation or translation model as the optional comparison (pretrained if openly available, else a documented Colab path); synthetic-tile generation as a documented use of the phantom generator. The audit must answer: *does normalisation reduce biomarker variability, and by how much?* | Generative AI with a measurable claim. |
+| **S2 · Explorer (V7 + P8)** | S | The Streamlit explorer with a **modality switch**: pick a disturbance, watch the biomarker distribution move, list the least stable cases or tiles, use the sample-size calculator, run read-only SQL. Pathologist-facing overlays and phenotype maps; a review sheet of the least stable tiles. | A person who does not write code can ask "what if the scanner were noisier?" on either track. |
+| **S3 · Report · publication package · container (V8 + P9)** | S | A Quarto report regenerating itself from the database for both tracks; `docs/07-publication-package/` with a manuscript skeleton, a conference abstract template, `CITATION.cff` and a Zenodo DOI entry; QuPath-readable overlay export; the container image. Then the 1.0 line is in sight. | An audit that produces no readable, citable record is not an audit. |
+
+**Also in 0.3.0:** import adapters, so outlines exported from other tools
+(radiology or pathology) can be audited without retraining anything.
+
+**Honest expectation:** about fifteen further weekends. Roughly twenty-nine to
+0.3.0 in total.
+
+---
+
+## 7. Version 0.4.0 and beyond — deliberately vaguer
+
+Further out, so stated with less confidence. Each is judged properly, with a
+verdict and a trigger, in
 [`06-product-and-technology-roadmap.md`](06-product-and-technology-roadmap.md).
 
-- **A tool server**, so other programs can run an audit directly rather than
-  through a person typing commands. The function layer was shaped for this
-  from the first commit; adding it should be additive, not a rewrite.
+- **A tool server**, so other programs can run an audit on either track
+  directly rather than through a person typing commands. The function layer
+  was shaped for this from the first commit.
 - **Plain-language narration** of the report, generated from the computed
   numbers and strictly grounded in them.
-- **Foundation-model segmenters** as plug-ins. General-purpose medical
-  segmentation models are appearing; the interesting question is not whether
-  they are accurate but whether they are *stable*, and this project is exactly
-  the instrument for asking that.
-- **Real test–retest data.** The honest limitation of everything above is that
-  the repeat scans are simulated. Publicly available same-subject repeat
-  imaging exists; incorporating it would upgrade the whole result. Any specific
-  dataset will be named here only once verified, not assumed.
-- **Clinical covariates.** The biomarker table is designed to join to a
-  case-level table of subject characteristics. The current dataset ships none,
-  which is stated rather than hidden.
+- **Foundation-model segmenters and gated foundation models as plug-ins**
+  (radiology: general-purpose medical segmenters; pathology: the gated,
+  non-commercial models such as UNI, CONCH, Virchow and Prov-GigaPath). The
+  harness accepts them; the repository never depends on them.
+- **Real test–retest data for Track V.** Publicly available same-subject
+  repeat MRI exists; adopting it would upgrade Track V to the standing Track P
+  already has with PLISM. Any specific dataset is named here only once
+  verified.
+- **Clinical covariates.** The biomarker table joins to a case-level table of
+  subject characteristics. Current datasets ship few; stated rather than
+  hidden.
+- **Further modality profiles**: PET, DXA, ultrasound, ophthalmic imaging.
+  Trigger: a public dataset with a permissive licence and a biomarker with a
+  trial precedent.
+- **Import adapters for radiology toolchains** (FreeSurfer, FSL, SPM outputs)
+  and **pathology interoperability** (QuPath, Napari plugin, DICOM-WSI,
+  OME-Zarr). Trigger: the first external-tool audit request.
+- **Coded findings** via RadLex, SNOMED CT and pathology ontologies. Trigger:
+  output must feed a system expecting coded terms.
+- **Cloud object storage for slides.** Trigger: whole-slide audits at a scale
+  no laptop holds.
 
 ---
 
-## 7. What is deliberately *not* planned
+## 8. What is deliberately *not* planned
 
 A roadmap is more informative for what it excludes. None of these is planned,
 and each exclusion has a reason:
@@ -195,34 +276,30 @@ and each exclusion has a reason:
   regulated medical-device software, with a quality system, formal validation
   and legal responsibility behind it. This is a research tool, and pretending
   otherwise would be dishonest.
-- **A general-purpose segmentation library.** Others do that well. StableSeg
-  audits segmenters; it does not compete with them.
+- **A general-purpose segmentation library, or a general-purpose pathology
+  platform.** Others do both well. StableSeg audits; it does not compete.
 - **A cloud service, for now.** Everything runs on a laptop deliberately.
-  Cloud infrastructure is judged in the product roadmap, with the specific
-  conditions that would justify it.
-- **More segmentation targets than the question needs.** Hippocampus first, CT
-  second, and only then breadth. A tool that audits one thing well is worth
-  more than one that half-audits six.
+- **Training foundation models here.** Self-supervised pretraining is
+  documented as an optional path on rented hardware, never a laptop
+  requirement. The project *audits* foundation models; it does not make them.
+- **More targets than the question needs.** Hippocampus and colorectal /
+  breast pathology first; breadth only after depth.
 
 ---
 
-## 8. How to read progress
+## 9. How to read progress
 
-The README's **Build log** table marks each phase ✅ or ⬜, and the **Results,
-phase by phase** section carries one figure per completed phase. Neither shows
-anything before it exists. If a phase is marked complete, its tutorial exists
-in `docs/04-phase-tutorials/`, its code is in `src/`, and its checks are in
-`tests/`.
-
-`CHANGELOG.md` records what changed in each released version, in the order it
-happened.
+The README's **Build log** table marks each phase ✅ or ⬜, on both tracks,
+and the **Results, phase by phase** section carries one figure per completed
+phase. Neither shows anything before it exists. `CHANGELOG.md` records what
+changed in each released version. `BUILD_GUIDE.md` is the living spine and
+flips a phase from ⬜ to ✅ in the same commit as the code.
 
 ---
 
-## 9. Committing changes to this document
+## 10. Committing changes to this document
 
-The roadmap is a living document; it changes whenever reality does. Same
-procedure as every other change in this project:
+The roadmap is a living document; it changes whenever reality does:
 
 ```bash
 git switch develop
@@ -231,6 +308,7 @@ git commit -m "docs: update roadmap"
 git push origin develop develop:beta develop:master
 
 ## --tags is optional, only when required
+## then switch back to local master and pull in the remote changes
 
 git switch master
 git pull --ff-only origin master
@@ -241,4 +319,5 @@ git switch develop
 
 Next: [`06-product-and-technology-roadmap.md`](06-product-and-technology-roadmap.md)
 — what it would take to turn this from a laptop tool into a hosted product,
-and an honest verdict on every technology that could be involved.
+and an honest verdict on every technology that could be involved, on both
+tracks.

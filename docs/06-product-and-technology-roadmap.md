@@ -438,6 +438,99 @@ skill.
 
 ---
 
+## 5b. Pathology-specific technologies
+
+Track P brings its own candidates. Same four-part treatment for each.
+
+### 5b.1 Whole-slide image viewers (OpenSeadragon and similar)
+
+**What it is.** A web viewer that pans and zooms across an image pyramid the
+way a map app does, loading only the tiles in view.
+
+**What problem it solves.** A pathologist cannot judge an overlay on a
+224-pixel thumbnail; they need to zoom.
+
+**Verdict: Recommended later (S2).** The explorer's pathology view embeds a
+tile viewer for the least-stable-tile review sheet. Not before there are
+overlays to review.
+
+**Trigger:** the review sheet exists.
+
+### 5b.2 QuPath interoperability
+
+**What it is.** QuPath is the widely used open-source desktop tool for
+viewing and annotating slides. Interoperability means exporting overlays and
+cell tables in a form it opens (GeoJSON for outlines, tables for measurements).
+
+**Verdict: Recommended later (S3).** Cheap, and it is how a pathologist
+actually looks at results. Import of QuPath annotations as "outlines from
+other software" is the same door in the other direction.
+
+**Trigger:** the first pathologist review.
+
+### 5b.3 DICOM-WSI
+
+**What it is.** The hospital DICOM standard extended to whole slides, so
+pathology can live in the same archives as radiology.
+
+**Verdict: Optional.** Public datasets ship as vendor formats or TIFF, which
+OpenSlide reads. Reading DICOM-WSI becomes valuable when the tool meets a
+hospital archive.
+
+**Trigger:** input arrives as DICOM-WSI.
+
+### 5b.4 OME-Zarr and cloud object storage for slides
+
+**What they are.** A chunked, cloud-native image format, and rented storage
+to hold slides too large for a laptop.
+
+**Verdict: Not needed.** The core audit runs on tiles on purpose; one real
+slide is streamed from local disk for the demonstration.
+
+**Trigger:** whole-slide audits at a scale a laptop cannot hold — the same
+trigger as object storage on Track V.
+
+### 5b.5 Gated model hubs and licence policy
+
+**What it is.** Foundation-model weights distributed behind a click-through
+agreement, a registration, or an institutional approval, often with a
+non-commercial licence.
+
+**Verdict: Documented now, enforced from P4.** The policy: the repository
+depends only on models a first-time user can download without an
+institutional approval; every non-commercial licence is written on the model
+card; gated or non-commercial models are accepted by the benchmark harness as
+plug-ins that the user brings. Nothing in the repository quietly assumes
+access it cannot guarantee.
+
+**Trigger:** none — this is a standing rule.
+
+### 5b.6 RadLex, SNOMED CT and pathology ontologies for coded findings
+
+**What they are.** Agreed dictionaries of terms with stable identifiers —
+RadLex for radiology, SNOMED CT for clinical concepts broadly, with pathology
+coverage — so "tumour epithelium" is a code every system agrees on rather
+than free text. (The general case is judged in section 4.4; this entry adds
+the two-track specifics.)
+
+**Verdict: Optional.** The cheap partial step is taken early on both tracks:
+anatomical structures and tissue classes are stored as stable identifiers
+rather than strings. Full coded findings wait for a consumer that needs them.
+Note that SNOMED CT licensing varies by country.
+
+**Trigger:** output must feed a system expecting coded terms.
+
+### 5b.7 Napari plugin
+
+**What it is.** Napari is an open-source Python image viewer popular in
+microscopy; a plugin would let it call the audit directly.
+
+**Verdict: Not needed.** The explorer and QuPath export cover viewing.
+
+**Trigger:** a request from a Napari-based workflow.
+
+---
+
 ## 6. If it ever became a product people found
 
 ### 6.1 Being findable: search, answer engines, generative engines
@@ -544,8 +637,15 @@ the point of building them first.
 | Monitoring and a cost model | Not needed | The first hosted deployment |
 | Privacy law / medical-device rules | Documented now | Real patient data or any clinical claim — a hard line |
 | Search / answer / generative optimisation | Not needed | A public product site exists |
+| Whole-slide viewer in the explorer | Recommended later (S2) | The review sheet exists |
+| QuPath interoperability | Recommended later (S3) | The first pathologist review |
+| DICOM-WSI | Optional | Input arrives as DICOM-WSI |
+| OME-Zarr / cloud slide storage | Not needed | Whole-slide audits beyond a laptop |
+| Gated model hubs / licence policy | Documented now — standing rule | — |
+| Coded findings (RadLex, SNOMED CT, pathology ontologies) | Optional | A consumer expecting coded terms |
+| Napari plugin | Not needed | A Napari-based workflow asks |
 
-**Fourteen of nineteen are "no" today.** That is the intended result. Every one
+**Eighteen of twenty-six are "no" today.** That is the intended result. Every one
 of them would work, and adding them would make the architecture diagram more
 impressive and the project worse. The discipline of writing down *why not*, and
 what would change the answer, is what makes it a decision rather than neglect —

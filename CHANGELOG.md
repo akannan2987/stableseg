@@ -12,6 +12,34 @@ Planned for 0.2.0: real hippocampus MRI ingestion, the perturbation bank, the
 classical segmenter, biomarker extraction, and the first repeatability
 statistics. See `docs/05-roadmap.md`.
 
+## [Unreleased]
+
+### Added
+- **Second track: digital pathology.** The project now has two equal tracks —
+  volumetric radiology (Track V, everything previously planned, unchanged) and
+  digital pathology (Track P: H&E, IHC, multiplex immunofluorescence, spatial
+  transcriptomics) — sharing one statistical spine. This release carries the
+  design: the two-track roadmap with a dependency graph and honest estimates
+  (`docs/05-roadmap.md`), the architecture redrawn with both tracks and the
+  shared spine (`docs/02-architecture.md`), a glossary section for pathology
+  and spatial biology (`docs/00-glossary.md`, Part 3), pathology-specific
+  technology verdicts (`docs/06-product-and-technology-roadmap.md`, 5b), the
+  build guide extended with every Track P and shared phase, and the README
+  restated for both worlds.
+- **Data cards** (`docs/data-cards/`): one page per dataset on either track —
+  source, licence, size, what it is used for, and what it cannot show —
+  written before any download script. Six cards: MSD hippocampus, PLISM,
+  canine multi-scanner SCC, NCT-CRC-HE, PanNuke, BCI. Non-commercial licences
+  stated on the card and in the README.
+- Illustrations across the documentation: three figures generated from the
+  project's own data by `scripts/make_figures.py` (voxel spacing and volume,
+  measurement wobble, a perturbation preview), and Mermaid diagrams for the
+  branch model, tags versus branches, the version milestones, static-versus-
+  running hosting, the uninstall layers, the virtual-environment concept, the
+  backend/frontend/database idea and the Python-R cross-check. Figures are
+  regenerated from code, never drawn by hand, so they cannot drift from what
+  the code does.
+
 ## [0.1.1] - 2026-09-02
 
 ### Fixed
