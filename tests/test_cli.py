@@ -106,3 +106,34 @@ def test_describe_tile_reports_geometry(tmp_path, monkeypatch):
     assert payload["mpp"] == 0.5
     assert payload["channels"] == ["R", "G", "B"]
     assert payload["synthetic"] is True
+
+
+def test_datasets_command_lists_the_registry():
+    result = runner.invoke(app, ["datasets"])
+    assert result.exit_code == 0, result.output
+    assert "msd_task04_hippocampus" in json.loads(result.output)
+
+
+def test_dataset_summary_on_the_phantom_folder(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner.invoke(app, ["phantom"])
+    result = runner.invoke(app, ["dataset-summary", "data/phantom", "--manifest", "runs/manifest.csv"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["n_cases"] == 8 and payload["n_with_labels"] == 8
+    assert (tmp_path / "runs" / "manifest.csv").exists()
+
+
+def test_dicom_to_nifti_command(tmp_path, monkeypatch):
+    import numpy as np
+
+    from stableseg.dicom import write_synthetic_series
+
+    monkeypatch.chdir(tmp_path)
+    write_synthetic_series(
+        tmp_path / "series", np.zeros((8, 8, 4), dtype=np.uint16), spacing_mm=(1.0, 1.0, 2.5)
+    )
+    result = runner.invoke(app, ["dicom-to-nifti", "series", "out/vol.nii.gz"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["spacing_mm"] == [1.0, 1.0, 2.5]

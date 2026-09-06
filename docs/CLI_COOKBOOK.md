@@ -268,6 +268,59 @@ datasets, two settings files, no ambiguity about which produced what.
 
 ---
 
+## 3a · Fetching real data (Track V)
+
+### 3a.1 What can be fetched
+
+```bash
+stableseg datasets
+```
+Lists every registered dataset with its licence and data card.
+
+### 3a.2 Fetch the hippocampus MRI
+
+```bash
+stableseg fetch msd_task04_hippocampus
+```
+
+```json
+{
+  "dataset": "msd_task04_hippocampus",
+  "license": "CC BY-SA 4.0",
+  "root": ".../data/Task04_Hippocampus",
+  "steps": ["downloaded Task04_Hippocampus.tar", "MD5 verified", "unpacked to Task04_Hippocampus"]
+}
+```
+
+**`"MD5 verified"` is the checkpoint.** A **checksum** is a fingerprint of
+every byte of the file; if yours matches the authors', you have their file
+exactly. A mismatch deletes the archive and says so — the tool never keeps a
+file whose seal is broken. Running the command again downloads nothing
+(`already present and verified`): it is **idempotent**, safe to re-run.
+
+### 3a.3 Catalogue it
+
+```bash
+stableseg dataset-summary data/Task04_Hippocampus --manifest runs/msd-manifest.csv
+```
+
+Counts, label coverage, and — the field to read first — the range of voxel
+spacings. A dataset whose spacing varies is one whose volumes must be compared
+in millimetres, never in voxels. The catalogue reads spacing from every file's
+header so it is never assumed.
+
+### 3a.4 Convert a DICOM series
+
+```bash
+stableseg dicom-to-nifti path/to/series_folder out.nii.gz
+```
+
+One folder holding one series (one file per slice) becomes one NIfTI volume,
+with the hospital coordinate convention converted to the research one. The
+folder must hold exactly one series; two are refused rather than merged.
+
+---
+
 ## 3b · Generating Track P data
 
 ### 3b.1 Generate the H&E phantom tiles
@@ -576,7 +629,7 @@ pytest -q                        # run every automated check
 ```
 16 files left unchanged
 All checks passed!
-54 passed in 0.6s
+74 passed in 0.6s
 ```
 
 **What each is for.** `ruff format` rewrites files to one style, so nobody
@@ -679,7 +732,6 @@ skipped. Each appears here, with real pasted output, when its phase lands.
 
 | Phase | Commands it will add |
 |---|---|
-| V2 · Real data | `stableseg fetch-msd`, `stableseg describe` on a real scan, DICOM import |
 | P1 · Pathology data | `stableseg fetch-pathology <dataset>`, `describe-tile` on a real tile, streamed slide |
 | 3 · Perturbations | `stableseg perturb --profile mri`, listing available disturbances |
 | 4 · Segment & measure | `stableseg segment`, `stableseg measure`, SQL queries against the results database |

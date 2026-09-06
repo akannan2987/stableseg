@@ -115,7 +115,7 @@ ruff check .
 pytest -q
 python scripts/preflight.py
 ```
-Expected: `All checks passed!`, `54 passed`, `Clear to commit and push.`
+Expected: `All checks passed!`, `74 passed`, `Clear to commit and push.`
 
 And if R is installed:
 ```bash

@@ -1,0 +1,15 @@
+# Track V's first real dataset: the Medical Segmentation Decathlon hippocampus set.
+#
+# `stableseg fetch msd_task04_hippocampus` puts it under data/Task04_Hippocampus,
+# verified by checksum. This config then points every later phase at it.
+# Licence CC BY-SA 4.0; data card: docs/data-cards/msd-hippocampus.md.
+
+name: msd-hippocampus
+
+data:
+  source: nifti_folder
+  root: data/Task04_Hippocampus
+
+output:
+  root: runs
+  run_name: msd-hippocampus

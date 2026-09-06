@@ -94,3 +94,101 @@ def label_volume_mm3(label: Volume, label_value: int = 1) -> float:
     """
     n = int(np.count_nonzero(label.data == label_value))
     return n * label.voxel_volume_mm3
+
+
+# --------------------------------------------------------------------------
+# Cataloguing a folder of scans
+# --------------------------------------------------------------------------
+
+
+def scan_dataset_folder(root: str | Path, read_geometry: bool = True):
+    """Catalogue a folder of NIfTI scans into one table: one row per case.
+
+    Two folder layouts are understood, because both occur in practice:
+
+    - `images/` + `labels/`            - this project's phantom layout
+    - `imagesTr/` + `labelsTr/` + `imagesTs/` - the Medical Segmentation
+      Decathlon layout ("Tr" = training, with expert outlines; "Ts" = test,
+      images only)
+
+    Images and labels are paired by identical filename, which is the
+    convention every public imaging dataset this project touches follows.
+    A case without a label is kept (with `label` empty), because unlabelled
+    scans are still scans the audit can perturb and measure.
+
+    With `read_geometry=True` each file's header is opened to record its shape
+    and voxel spacing - cheap (headers only), and the single most useful
+    sanity check on a new dataset: a spacing that is not what you expected is
+    the first thing to find out, not the last.
+    """
+    import pandas as pd
+
+    root = Path(root)
+    if not root.is_dir():
+        raise FileNotFoundError(root)
+
+    layouts = [("images", "labels"), ("imagesTr", "labelsTr")]
+    img_dir = lbl_dir = None
+    for img_name, lbl_name in layouts:
+        if (root / img_name).is_dir():
+            img_dir, lbl_dir = root / img_name, root / lbl_name
+            break
+    if img_dir is None:
+        raise ValueError(f"{root} has neither images/ nor imagesTr/; is this the dataset root?")
+
+    def is_scan(p: Path) -> bool:
+        # Skip Mac resource-fork companions (._name) that ride along in some archives.
+        return p.name.endswith((".nii", ".nii.gz")) and not p.name.startswith("._")
+
+    rows = []
+    for img in sorted(p for p in img_dir.iterdir() if is_scan(p)):
+        case_id = img.name.removesuffix(".nii.gz").removesuffix(".nii")
+        lbl = lbl_dir / img.name if lbl_dir.is_dir() and (lbl_dir / img.name).exists() else None
+        row: dict = {
+            "case_id": case_id,
+            "image": str(img),
+            "label": str(lbl) if lbl else "",
+            "split": "train" if img_dir.name in ("images", "imagesTr") else "test",
+        }
+        if read_geometry:
+            hdr = nib.load(str(img))
+            shape = hdr.shape[:3]
+            zooms = hdr.header.get_zooms()[:3]
+            row.update(
+                {
+                    "shape_x": int(shape[0]),
+                    "shape_y": int(shape[1]),
+                    "shape_z": int(shape[2]),
+                    "spacing_x_mm": float(zooms[0]),
+                    "spacing_y_mm": float(zooms[1]),
+                    "spacing_z_mm": float(zooms[2]),
+                }
+            )
+        rows.append(row)
+
+    # Test images (MSD layout), catalogued without labels.
+    ts_dir = root / "imagesTs"
+    if ts_dir.is_dir():
+        for img in sorted(p for p in ts_dir.iterdir() if is_scan(p)):
+            row = {
+                "case_id": img.name.removesuffix(".nii.gz").removesuffix(".nii"),
+                "image": str(img),
+                "label": "",
+                "split": "test",
+            }
+            if read_geometry:
+                hdr = nib.load(str(img))
+                shape, zooms = hdr.shape[:3], hdr.header.get_zooms()[:3]
+                row.update(
+                    {
+                        "shape_x": int(shape[0]),
+                        "shape_y": int(shape[1]),
+                        "shape_z": int(shape[2]),
+                        "spacing_x_mm": float(zooms[0]),
+                        "spacing_y_mm": float(zooms[1]),
+                        "spacing_z_mm": float(zooms[2]),
+                    }
+                )
+            rows.append(row)
+
+    return pd.DataFrame(rows)

@@ -71,7 +71,8 @@ class DataSpec(BaseModel):
     source: Literal["phantom", "nifti_folder", "he_phantom"] = Field(
         default="phantom",
         description=(
-            "'phantom' generates MRI phantoms; 'nifti_folder' reads real NIfTI files; "
+            "'phantom' generates MRI phantoms; 'nifti_folder' reads real NIfTI files "
+            "(this project's images/labels layout or the Decathlon imagesTr/labelsTr layout); "
             "'he_phantom' generates synthetic H&E tiles (Track P)."
         ),
     )

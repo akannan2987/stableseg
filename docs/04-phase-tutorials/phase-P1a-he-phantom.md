@@ -11,7 +11,7 @@ brightness, and how a tile with a known number of nuclei is built and
 verified — and you will have Track P's first reference number on your screen.
 **Time:** about one hour.
 **Checkpoint:** `stableseg he-phantom` prints `"mean_true_nuclei": 60.0` and
-`"mean_nuclear_area_um2": 2950.875`; `pytest -q` prints `54 passed`.
+`"mean_nuclear_area_um2": 2950.875`; `pytest -q` prints `74 passed`.
 
 ---
 
@@ -257,7 +257,7 @@ print(pd.read_csv("data/he_phantom/manifest.csv").loc[0, "nuclear_area_um2"])  #
 And run the checks:
 
 ```bash
-pytest -q                        # 54 passed
+pytest -q                        # 74 passed
 ```
 
 ---

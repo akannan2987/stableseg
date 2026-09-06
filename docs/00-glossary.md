@@ -297,6 +297,44 @@ same size, same grid, one file saying how bright each voxel is and the other
 saying which structure it belongs to. Pairing them by identical filename in two
 folders is a convention this project borrows from public imaging datasets.
 
+**Checksum (MD5).** A fixed-length fingerprint computed from every byte of a
+file; change one byte and it changes completely. Used to prove a download is
+the file the authors published, intact. *Everyday version:* the seal on a
+parcel — you do not open one whose seal is broken. Not a defence against a
+determined attacker, but a reliable one against the failures that actually
+happen: truncated downloads, flipped bits, silently replaced files.
+
+**Idempotent.** Doing it again changes nothing. A fetch that is idempotent
+downloads nothing the second time; a setup script that is idempotent can be
+re-run without fear. *Everyday version:* pressing the lift button twice.
+
+**Archive (tar).** Many files bundled into one, the way datasets are
+distributed. Unpacking recreates the folder structure. Two hazards handled
+here: hidden `._` companion files that Mac-made archives carry (dropped), and
+entries whose path would write outside the chosen folder (refused).
+
+**AppleDouble (`._` files).** Hidden companions macOS writes beside every file
+in some archives to store extra attributes. They are named like the real
+files and are not them; a loader that counts them gets the wrong answer.
+
+**Registry (of datasets).** One entry per dataset — where it is, what its
+checksum must be, how it is licensed, where its data card lives — so a
+dataset is fetched from a description, never from a bare URL in a script.
+
+**DICOM tag.** One labelled field in a DICOM file's header — patient name,
+pixel spacing, position in space — identified by a pair of numbers such as
+`(0028,0030)`. A slice carries hundreds.
+
+**Series (DICOM).** One scan's worth of slices, sharing an identifier. A
+hospital export puts one series per folder; the reader here refuses a folder
+holding two rather than guessing which slices belong together.
+
+**LPS and RAS.** Two conventions for which way the axes point. DICOM uses
+**LPS** — x toward the patient's Left, y Posterior, z Superior. NIfTI uses
+**RAS** — Right, Anterior, Superior. They differ by flipping the first two
+axes; ignore that and a brain's left becomes its right. The project converts
+everything to RAS so all scans share one frame.
+
 **Manifest.** A plain table listing every case in a dataset with its key facts.
 Ours is `data/phantom/manifest.csv`, one row per phantom with its known true
 volumes. *Everyday version:* the packing list in a shipping crate.

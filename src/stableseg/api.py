@@ -13,8 +13,10 @@ from pathlib import Path
 from typing import Any
 
 from stableseg import __version__
+from stableseg import datasets as _datasets
 from stableseg.config import AuditConfig
-from stableseg.io import load_volume
+from stableseg.dicom import series_to_nifti
+from stableseg.io import load_volume, scan_dataset_folder
 from stableseg.pathology.phantom import generate_he_phantom_dataset
 from stableseg.pathology.tile import load_tile
 from stableseg.phantom import generate_phantom_dataset
@@ -103,3 +105,61 @@ def generate_he_phantoms(config: AuditConfig) -> dict[str, Any]:
         "mean_true_nuclei": float(manifest["n_nuclei_true"].mean()),
         "mean_nuclear_area_um2": float(manifest["nuclear_area_um2"].mean()),
     }
+
+
+def fetch_dataset(key: str, dest_root: str | Path = "data", force: bool = False) -> dict[str, Any]:
+    """Download (if needed), verify by checksum, and unpack a registered dataset."""
+    return _datasets.fetch(key, dest_root=dest_root, force=force)
+
+
+def list_datasets() -> dict[str, Any]:
+    """The registry, as plain data: what can be fetched, under what licence, with which data card."""
+    return {
+        k: {
+            "title": v.title,
+            "license": v.license,
+            "approx_mb": v.approx_mb,
+            "track": v.track,
+            "data_card": v.data_card,
+        }
+        for k, v in _datasets.DATASETS.items()
+    }
+
+
+def dataset_summary(root: str | Path, manifest_out: str | Path | None = None) -> dict[str, Any]:
+    """Catalogue a folder of scans; optionally write the table as CSV; return a summary.
+
+    The summary is the first thing to read about any new dataset: how many
+    cases, how many with outlines, and - above all - the range of voxel
+    spacings, because a dataset whose spacing varies is a dataset whose volumes
+    must be compared in millimetres, never in voxels.
+    """
+    table = scan_dataset_folder(root, read_geometry=True)
+    if manifest_out is not None:
+        Path(manifest_out).parent.mkdir(parents=True, exist_ok=True)
+        table.to_csv(manifest_out, index=False)
+    out: dict[str, Any] = {
+        "root": str(Path(root).resolve()),
+        "n_cases": int(len(table)),
+        "n_with_labels": int((table["label"] != "").sum()),
+        "n_train": int((table["split"] == "train").sum()),
+        "n_test": int((table["split"] == "test").sum()),
+    }
+    if len(table):
+        for ax in ("x", "y", "z"):
+            out[f"spacing_{ax}_mm_min"] = float(table[f"spacing_{ax}_mm"].min())
+            out[f"spacing_{ax}_mm_max"] = float(table[f"spacing_{ax}_mm"].max())
+            out[f"shape_{ax}_min"] = int(table[f"shape_{ax}"].min())
+            out[f"shape_{ax}_max"] = int(table[f"shape_{ax}"].max())
+    if manifest_out is not None:
+        out["manifest"] = str(Path(manifest_out).resolve())
+    return out
+
+
+def dicom_to_nifti(series_dir: str | Path, out_path: str | Path) -> dict[str, Any]:
+    """Convert one DICOM series folder to a NIfTI file and describe the result."""
+    written = series_to_nifti(series_dir, out_path)
+    vol = load_volume(written)
+    out = vol.describe()
+    out["path"] = str(written)
+    return out

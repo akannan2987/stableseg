@@ -21,6 +21,10 @@ Figures written (all under docs/img/, all well below the 1 MB preflight cap):
     perturbation_preview.png  what phase 3 will do to a scan (illustration)
     he_phantom_tile000.png    Track P: the synthetic H&E phantom, its truth,
                               and what colour deconvolution recovers
+    msd_hippocampus_case.png  Track V: a real hippocampus MRI with its expert
+                              outline, three orthogonal views (needs the
+                              dataset: `stableseg fetch msd_task04_hippocampus`;
+                              skipped with a message if absent)
 
 `phantom_case000.png` (the image/labels/overlay panel) is produced separately
 during phase 1 and is not rewritten here.
@@ -255,12 +259,68 @@ def fig_he_phantom() -> None:
     plt.close(fig)
 
 
+# ---------------------------------------------------------------------------
+# Figure 5 (Track V): a real scan. The first figure in the project that is
+# not synthetic. Needs the fetched dataset; skips politely otherwise, because
+# a figure script that fails on a fresh clone would be a figure script nobody
+# runs.
+# ---------------------------------------------------------------------------
+def fig_msd_case() -> None:
+    from stableseg.io import label_volume_mm3, load_volume
+
+    root = REPO_ROOT / "data" / "Task04_Hippocampus"
+    case = "hippocampus_001"
+    img_path = root / "imagesTr" / f"{case}.nii.gz"
+    lbl_path = root / "labelsTr" / f"{case}.nii.gz"
+    if not img_path.exists():
+        print(
+            "  msd_hippocampus_case.png  SKIPPED - real data not present. "
+            "Run `stableseg fetch msd_task04_hippocampus` first."
+        )
+        return
+
+    img, lbl = load_volume(img_path), load_volume(lbl_path)
+    data, labels = img.data.astype(np.float32), lbl.data.astype(np.int32)
+    # Window the intensities for display; MRI has no fixed scale.
+    lo, hi = np.percentile(data, [1, 99])
+    shown = np.clip((data - lo) / (hi - lo), 0, 1)
+    # Cut through the centre of the outlined structure so every view shows it.
+    cz, cy, cx = (np.round(np.mean(np.argwhere(labels > 0), axis=0)).astype(int))[::-1]
+    sx, sy, sz = img.spacing_mm
+    v1, v2 = label_volume_mm3(lbl, 1), label_volume_mm3(lbl, 2)
+
+    fig, axes = plt.subplots(1, 3, figsize=(10, 3.9))
+    views = [
+        (shown[cx, :, :].T, labels[cx, :, :].T, sy / sz, "sagittal (x fixed)"),
+        (shown[:, cy, :].T, labels[:, cy, :].T, sx / sz, "coronal (y fixed)"),
+        (shown[:, :, cz].T, labels[:, :, cz].T, sx / sy, "axial (z fixed)"),
+    ]
+    for ax, (sl, lb, aspect, title) in zip(axes, views, strict=True):
+        ax.imshow(sl, cmap="gray", origin="lower", aspect=1 / aspect, interpolation="nearest")
+        ax.contour(lb == 1, levels=[0.5], colors=[BLUE], linewidths=1.0)
+        ax.contour(lb == 2, levels=[0.5], colors=[ORANGE], linewidths=1.0)
+        ax.set_title(title, fontsize=10)
+        ax.axis("off")
+    fig.suptitle(
+        f"Real T1 MRI, Medical Segmentation Decathlon {case} — expert outline: "
+        f"label 1 (blue) {v1:.0f} mm³, label 2 (orange) {v2:.0f} mm³; "
+        f"voxels {sx:.2g}×{sy:.2g}×{sz:.2g} mm.\n"
+        "Tiny volume, real anatomy, CC BY-SA 4.0. "
+        "One scan per subject — every repeat in Track V is simulated.",
+        fontsize=9.5,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.86))
+    fig.savefig(IMG / "msd_hippocampus_case.png", dpi=110, pil_kwargs={"optimize": True})
+    plt.close(fig)
+
+
 if __name__ == "__main__":
     IMG.mkdir(parents=True, exist_ok=True)
     fig_voxel_volume()
     fig_repeatability_wobble()
     fig_perturbation_preview()
     fig_he_phantom()
+    fig_msd_case()
     # Every figure is committed, and git history is permanent, so size is
     # checked here rather than discovered later. 200 KB is generous for a
     # documentation figure; the pre-push check refuses anything over 1 MB.

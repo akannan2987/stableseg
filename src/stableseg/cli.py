@@ -11,6 +11,7 @@ from pathlib import Path
 import typer
 
 from stableseg import api
+from stableseg import datasets as _datasets
 from stableseg.config import AuditConfig
 
 app = typer.Typer(
@@ -113,3 +114,49 @@ def describe_tile(
 ) -> None:
     """Summarise a 2-D tile: shape, microns per pixel, channels, intensity range."""
     _emit(api.describe_tile(path))
+
+
+@app.command("datasets")
+def datasets_cmd() -> None:
+    """List the datasets this tool can fetch, with licence and data card."""
+    _emit(api.list_datasets())
+
+
+@app.command("fetch")
+def fetch(
+    key: str = typer.Argument(
+        ..., help="Dataset key, e.g. msd_task04_hippocampus (see `stableseg datasets`)."
+    ),
+    dest: Path = typer.Option(Path("data"), "--dest", "-d", help="Folder to download and unpack into."),
+    force: bool = typer.Option(False, "--force", help="Re-download even if a verified copy exists."),
+) -> None:
+    """Download a registered dataset, verify its checksum, and unpack it. Idempotent."""
+
+    def bar(done: int, total: int) -> None:
+        if total:
+            pct = 100 * done / total
+            typer.echo(f"\r  {done / 1e6:6.1f} / {total / 1e6:.1f} MB  {pct:5.1f}%", nl=False, err=True)
+
+    result = _datasets.fetch(key, dest_root=dest, force=force, progress=bar)
+    typer.echo("", err=True)
+    _emit(result)
+
+
+@app.command("dataset-summary")
+def dataset_summary(
+    root: Path = typer.Argument(..., exists=True, help="Dataset root (has images/ or imagesTr/)."),
+    manifest: Path | None = typer.Option(
+        None, "--manifest", "-m", help="Also write the catalogue as CSV here."
+    ),
+) -> None:
+    """Catalogue a folder of scans: counts, label coverage, and the range of voxel spacings."""
+    _emit(api.dataset_summary(root, manifest_out=manifest))
+
+
+@app.command("dicom-to-nifti")
+def dicom_to_nifti(
+    series_dir: Path = typer.Argument(..., exists=True, help="Folder holding one DICOM series."),
+    out: Path = typer.Argument(..., help="Output .nii.gz path."),
+) -> None:
+    """Read a folder of DICOM slices and write one NIfTI volume, geometry preserved."""
+    _emit(api.dicom_to_nifti(series_dir, out))

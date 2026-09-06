@@ -7,10 +7,10 @@
 | **Track** | V — volumetric radiology |
 | **Source** | Medical Segmentation Decathlon, Task04 Hippocampus (Simpson et al., 2019; Antonelli et al., 2022) |
 | **Licence** | CC BY-SA 4.0 — credit the authors; share derived data under the same terms |
-| **Size** | about 36 MB compressed; 394 T1-weighted MRI volumes, 263 with expert outlines |
+| **Size** | about 27 MB as a tar archive; 390 T1-weighted MRI volumes in the archive — 260 with expert outlines (`imagesTr`/`labelsTr`) and 130 without (`imagesTs`). The original publication describes 394 / 263; the released archive holds 390 / 260, and the catalogue counts what is actually present. |
 | **Resolution** | roughly 35 × 50 × 35 voxels per volume at 1 mm isotropic |
-| **Download route** | public mirror bucket; the phase V2 script verifies the archive checksum before unpacking |
-| **Used from** | phase V2 |
+| **Download route** | `stableseg fetch msd_task04_hippocampus` — the MONAI project's public mirror, MD5 `9d24dba78a72977dbd1d2e110310f31b` verified before unpacking; a mismatch deletes the archive. Registry: `src/stableseg/datasets.py` |
+| **Used from** | phase V2 ✅ |
 
 ## What it contains
 

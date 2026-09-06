@@ -15,6 +15,20 @@ statistics. See `docs/05-roadmap.md`.
 ## [Unreleased]
 
 ### Added
+- **Phase V2 — real data.** `src/stableseg/datasets.py`: a dataset registry
+  (URL, MD5, licence, data card) and an idempotent `fetch` that downloads to a
+  temporary name, verifies the checksum, deletes on mismatch, and unpacks
+  while dropping AppleDouble `._` companions and refusing paths that escape
+  the destination. `src/stableseg/dicom.py`: a DICOM series reader (SimpleITK)
+  converting LPS to RAS so hospital and research scans share one frame, a
+  synthetic-series writer (pydicom, no patient identity) that serves as its
+  answer key, and series-to-NIfTI conversion. `scan_dataset_folder` in
+  `io.py` catalogues both this project's and the Decathlon's folder layouts
+  with header-only geometry. Commands `datasets`, `fetch`, `dataset-summary`,
+  `dicom-to-nifti`; `configs/msd_hippocampus.yaml`. Twenty new checks (74
+  total), none touching the network — the fetch path is exercised through a
+  `file://` URL against an archive built on the spot. The first real-scan
+  figure, generated on the user's machine after the fetch.
 - **Phase P1a — Track P's first code: the synthetic H&E phantom.**
   `src/stableseg/pathology/tile.py` (a 2-D `Tile` that never separates a
   picture from its microns-per-pixel, channel names and pyramid level, with
@@ -92,7 +106,7 @@ First public release: a runnable skeleton with the full documentation set.
 - Deterministic synthetic phantom generator (`phantom.py`) writing NIfTI
   images, labels and a manifest with known true volumes.
 - Command-line interface: `version`, `describe`, `phantom`, `validate-config`.
-- Test suite (54 tests) that needs no download, including checks that the
+- Test suite (74 tests) that needs no download, including checks that the
   declared Python range matches what the pinned dependencies actually require.
 - `scripts/preflight.py`: a pre-push safety check for credentials, oversized
   files, force-added ignored paths, absolute home paths and mixed line
