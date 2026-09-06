@@ -1008,9 +1008,10 @@ total nuclear area per tile in square microns, identical on every machine.
 
 ![The phantom tile, its known truth, and what colour deconvolution recovers](docs/img/he_phantom_tile000.png)
 
-*Tile 000: picture, known truth, the hematoxylin channel recovered from the
-picture alone by colour deconvolution — every nucleus, proving the phantom
-lives in the model real tools assume — and the truth outlined.*
+*Tile 000: the picture with the truth outlined, the known label map, and
+the hematoxylin channel recovered from the picture alone by colour
+deconvolution — every nucleus, proving the phantom lives in the model real
+tools assume.*
 
 ### Commit it
 

@@ -60,6 +60,27 @@ Everyday comparison: two people independently adding up the same column of
 figures. Agreement is real evidence. One person checking their own work twice
 is not.
 
+```mermaid
+flowchart LR
+    DATA[("data/phantom/<br/>manifest.csv")] --> PY["🐍 Python<br/>formulas written out by hand<br/><i>(teachable, visible)</i>"]
+    DATA --> RR["📊 R<br/>peer-reviewed packages<br/><i>(irr · psych · blandr)</i>"]
+    PY --> N1["2269.75"]
+    RR --> N2["2269.75"]
+    N1 --> AGREE{"agree to 4<br/>decimal places?"}
+    N2 --> AGREE
+    AGREE -->|yes| OK["✅ the formula is<br/>almost certainly right"]
+    AGREE -->|no| STOP["🛑 one is wrong —<br/>find out which<br/><i>before</i> publishing"]
+
+    classDef data fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    classDef lang fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef good fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    classDef bad fill:#FDE8E8,stroke:#CC3311,color:#5A1010;
+    class DATA data
+    class PY,RR lang
+    class N1,N2,OK,AGREE good
+    class STOP bad
+```
+
 Most projects never do this. It is cheap, and it is the single strongest thing
 you can do for confidence in a computed statistic.
 

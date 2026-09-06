@@ -45,6 +45,9 @@ statistics. See `docs/05-roadmap.md`.
   written before any download script. Six cards: MSD hippocampus, PLISM,
   canine multi-scanner SCC, NCT-CRC-HE, PanNuke, BCI. Non-commercial licences
   stated on the card and in the README.
+- A size guard in `scripts/make_figures.py`: any figure over 200 KB fails the
+  run, because git history is permanent and an early version of the Track P
+  figure reached 900 KB unnoticed.
 - Illustrations across the documentation: three figures generated from the
   project's own data by `scripts/make_figures.py` (voxel spacing and volume,
   measurement wobble, a perturbation preview), and Mermaid diagrams for the

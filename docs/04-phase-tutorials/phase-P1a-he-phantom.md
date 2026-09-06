@@ -146,12 +146,12 @@ default tiles — identical on every machine, because the generator is seeded
 per tile. If you see it, your install reproduces the reference tile set
 exactly.
 
-![The phantom tile, its known label map, the hematoxylin channel recovered by colour deconvolution, and the truth outlines](../img/he_phantom_tile000.png)
+![The phantom tile with its truth outlined, the known label map, and the hematoxylin channel recovered by colour deconvolution](../img/he_phantom_tile000.png)
 
-*Tile 000: the picture; the known truth (60 nuclei); what colour
-deconvolution recovers from the picture alone — every nucleus, which is the
-proof that the phantom lives in the same optical-density model the
-deconvolution assumes; and the truth outlined over the picture.*
+*Tile 000: the picture with the truth outlined; the known truth (60 nuclei);
+and what colour deconvolution recovers from the picture alone — every
+nucleus, which is the proof that the phantom lives in the same optical-density
+model the deconvolution assumes.*
 
 What landed on disk:
 

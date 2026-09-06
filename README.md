@@ -223,7 +223,7 @@ what it means. Nothing is shown before it exists.*
   Colour deconvolution recovers every nucleus from the picture, which proves
   the phantom lives in the model real pathology tools assume.
 
-  ![H&E phantom tile 000: picture, truth, deconvolution, outlines](docs/img/he_phantom_tile000.png)
+  ![H&E phantom tile 000: picture with truth outlined, label map, deconvolution](docs/img/he_phantom_tile000.png)
 
 - **Phase V2 — Real data:** *(pending)* the hippocampus MRI lands, with a
   DICOM reader tested on a synthetic series.

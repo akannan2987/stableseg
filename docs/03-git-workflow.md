@@ -71,75 +71,56 @@ Expected output ends with `branch 'master' set up to track 'origin/master'.`
 
 On first push GitHub asks you to sign in. Use the browser flow if offered; if it asks for a password, it wants a **personal access token**, not your account password (see the setup guide, "GitHub authentication").
 
-### 3.3 Create `develop` from `master`
+### 3.3 Create `beta` and `develop` from `master`
 
 ```bash
+git switch -c beta
+git push -u origin beta
+git switch master
 git switch -c develop
 git push -u origin develop
 ```
-Expected: `branch 'develop' set up to track 'origin/develop'.`
+Expected after each `push -u`: `branch '<name>' set up to track 'origin/<name>'.`
 
-`git switch -c X` means "create branch X from where I am and move to it".
-
-**You do not need a local `beta`.** The push in section 4 uses
-`develop:beta`, which means "send my local `develop` to the remote branch
-called `beta`" — the remote branch is created on first push and no local copy
-is involved. A local `beta` is only useful if you want to check out a
-pre-release build on this machine, which most of the time you never will. If
-you already made one and do not use it, delete it: `git branch -d beta`.
+`git switch -c X` means "create branch X from where I am and move to it". Both new branches are created *from `master`*, which is why we switch back to `master` between them.
 
 ### 3.4 Verify
 
 ```bash
 git branch -a
 ```
-
-`-a` means "all", so this lists local branches and the remote ones your copy
-knows about. What you see depends on how the repository got onto this machine:
-
-**If you created it here with `git init` (section 3.2):**
+Expected:
 ```
+  beta
 * develop
   master
-  remotes/origin/develop
-  remotes/origin/master
-```
-
-**If you cloned it from GitHub:**
-```
-* develop
-  master
-  remotes/origin/HEAD -> origin/master
   remotes/origin/beta
   remotes/origin/develop
   remotes/origin/master
 ```
-
-Two differences, both normal. `remotes/origin/HEAD -> origin/master` is a note
-your copy makes at clone time recording which branch the remote treats as its
-default; a repository created locally has never asked a remote that question,
-so the line is absent. And `remotes/origin/beta` appears once a push has
-created it, which a clone of an already-pushed repository inherits.
-
 The `*` marks the branch you are on. From here on you always sit on `develop`.
-
-A second, more useful check:
-
-```bash
-git branch -vv
-```
-Expected: two lines, each showing the branch, the short commit id, the remote
-branch it tracks in square brackets, and the commit message.
-```
-* develop 3969d1e [origin/develop] phase 1: ...
-  master  3969d1e [origin/master] phase 1: ...
-```
-Both on the same commit id is the healthy state at the end of every phase. If
-they differ, one of them did not get updated by the push block in section 4.
 
 ---
 
 ## 4. The everyday loop
+
+The whole model in one picture — you sit on local `develop`, one push updates
+all three remote branches, and local `master` is pulled back into step:
+
+```mermaid
+flowchart LR
+    YOU["🧑‍💻 you, always on<br/><b>local develop</b>"] -->|"git push origin develop<br/>develop:beta develop:master"| D["origin/develop"]
+    YOU --> B["origin/beta"]
+    YOU --> M["origin/master · 🏷️ tags"]
+    M -->|"git pull --ff-only"| LM["local master"]
+
+    classDef work fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef mirror fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    classDef rel fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    class YOU,D,LM work
+    class B mirror
+    class M rel
+```
 
 Work on `develop`. Before committing:
 
@@ -199,12 +180,6 @@ Expected output of the push line, three times over:
    3f2a1c9..8b4d2e0  develop -> beta
    3f2a1c9..8b4d2e0  develop -> master
 ```
-On the very first push, the `beta` line reads `* [new branch]` instead of a
-commit range, because the remote branch is being created.
-
-Automated checks run on `develop` and `master` only. All three branches point
-at the same commit after this block, so a third identical run on `beta` would
-prove nothing and only make a real failure harder to spot in the list.
 
 Expected output of the pull: `Fast-forward` followed by a file summary, or `Already up to date.`
 

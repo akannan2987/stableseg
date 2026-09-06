@@ -44,6 +44,25 @@ The everyday version: the noticeboard is static — you pin it and walk away. A
 person standing at a desk answering questions is a running program, and someone
 has to pay them to stand there.
 
+```mermaid
+flowchart TB
+    subgraph S["📄  STATIC FILE — finished before anyone asks"]
+        R["the report (phase 8)<br/>numbers computed, page rendered,<br/>server just hands over bytes"]
+    end
+    subgraph A["⚙️  RUNNING PROGRAM — works when someone asks"]
+        E["the explorer (phase 7)<br/>move a slider → Python runs →<br/>a machine must be awake"]
+    end
+    R --> GH["GitHub Pages<br/>free, essentially unbreakable"]
+    E --> SC["Streamlit Community Cloud<br/>free, sleeps when idle, modest memory"]
+
+    classDef static fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    classDef run fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    classDef host fill:#FFF3CD,stroke:#C9A227,color:#4A3B00;
+    class R static
+    class E run
+    class GH,SC host
+```
+
 StableSeg has one of each:
 
 | Output | Which kind | Consequence |
