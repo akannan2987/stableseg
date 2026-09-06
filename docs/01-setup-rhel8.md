@@ -209,6 +209,23 @@ your administrator which path is intended for user work.
 
 ## 6. Create the virtual environment
 
+```mermaid
+flowchart TB
+    subgraph SYS["💻  your computer"]
+        SP["system Python<br/>(the OS uses it — leave it alone)"]
+        subgraph P1["📁 stableseg/"]
+            V1["🧰 .venv — this project's own copies<br/>of every library it needs"]
+        end
+        subgraph P2["📁 any other project/"]
+            V2["🧰 its own .venv — different<br/>versions, no conflict"]
+        end
+    end
+    classDef sys fill:#F5F5F5,stroke:#BBBBBB,color:#333;
+    classDef box fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    class SP sys
+    class V1,V2 box
+```
+
 **What it is and why:** a **virtual environment** is a private toolbox for one
 project: its own libraries, isolated from the system. On RHEL this is not
 optional politeness, it is the rule — installing packages into the system
@@ -284,7 +301,7 @@ Expected: `0.1.0`
 ```bash
 pytest -q
 ```
-Expected: `38 passed in 0.6s`.
+Expected: `54 passed in 0.6s`.
 
 > ### What is a "phantom", and why are we making one?
 >

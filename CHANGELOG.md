@@ -15,6 +15,20 @@ statistics. See `docs/05-roadmap.md`.
 ## [Unreleased]
 
 ### Added
+- **Phase P1a — Track P's first code: the synthetic H&E phantom.**
+  `src/stableseg/pathology/tile.py` (a 2-D `Tile` that never separates a
+  picture from its microns-per-pixel, channel names and pyramid level, with
+  lossless PNG + geometry-sidecar I/O that refuses a picture without its
+  geometry) and `src/stableseg/pathology/phantom.py` (nuclei as
+  non-overlapping ellipses coloured through the hematoxylin/eosin
+  optical-density model with Ruifrok stain vectors, seeded per tile, with a
+  per-nucleus truth table). `HEPhantomSpec` in the config with sizes in
+  microns; `generate_he_phantoms` and `describe_tile` in the API; `he-phantom`
+  and `describe-tile` commands with the same installed-copy-safe config
+  resolution as `phantom`; `configs/he_phantom.yaml`. Sixteen new checks
+  (54 total). Reference value: mean nuclear area **2950.875 µm²** per tile.
+  Colour deconvolution recovers every nucleus from the phantom, confirming it
+  lives in the optical-density model real tools assume.
 - **Second track: digital pathology.** The project now has two equal tracks —
   volumetric radiology (Track V, everything previously planned, unchanged) and
   digital pathology (Track P: H&E, IHC, multiplex immunofluorescence, spatial
@@ -75,7 +89,7 @@ First public release: a runnable skeleton with the full documentation set.
 - Deterministic synthetic phantom generator (`phantom.py`) writing NIfTI
   images, labels and a manifest with known true volumes.
 - Command-line interface: `version`, `describe`, `phantom`, `validate-config`.
-- Test suite (38 tests) that needs no download, including checks that the
+- Test suite (54 tests) that needs no download, including checks that the
   declared Python range matches what the pinned dependencies actually require.
 - `scripts/preflight.py`: a pre-push safety check for credentials, oversized
   files, force-added ignored paths, absolute home paths and mixed line

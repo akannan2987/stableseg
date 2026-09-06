@@ -1,0 +1,29 @@
+# Track P's built-in dataset: synthetic H&E tiles with a known number of nuclei.
+#
+# Every value here is also the default in src/stableseg/config.py, so
+# `stableseg he-phantom` with no arguments produces exactly this run. The file
+# exists so the experiment is a document you can copy, edit and commit.
+#
+# Sizes are in MICRONS, not pixels: a nucleus has a physical size, and the
+# pixel count follows from mpp (microns per pixel). At 0.5 mpp a 4 um nucleus
+# is 8 px across; at 0.25 mpp it is 16 px. Keeping the physical number here
+# is what makes the tile comparable across magnifications.
+
+name: he-phantom-smoke
+
+data:
+  source: he_phantom
+  root: data/he_phantom
+  he_phantom:
+    n_tiles: 8
+    shape: [256, 256]        # pixels (height, width)
+    mpp: 0.5                 # a 20x scan
+    n_nuclei: 60
+    nucleus_radius_um: [3.0, 6.0]
+    illumination_strength: 0.08
+    noise_sd: 0.02
+    seed: 42
+
+output:
+  root: runs
+  run_name: he-phantom-smoke

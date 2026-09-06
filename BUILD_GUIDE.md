@@ -62,7 +62,7 @@ the document is wrong and that is a defect worth fixing immediately.
 7b. [Phase 1b — the R toolchain ✅](#7b-phase-1b--the-r-toolchain-)
 7c. [Phase 1c — the first release ✅](#7c-phase-1c--the-first-release-)
 7d. [Two tracks, one spine — how the rest is organised](#7d-two-tracks-one-spine--how-the-rest-is-organised)
-7e. [Phase P1a — the synthetic H&E phantom ⬜](#7e-phase-p1a--the-synthetic-he-phantom-)
+7e. [Phase P1a — the synthetic H&E phantom ✅](#7e-phase-p1a--the-synthetic-he-phantom-)
 8. [Phase V2 — real MRI data ⬜](#8-phase-v2--real-mri-data-)
 8b. [Phase P1 — pathology data and I/O ⬜](#8b-phase-p1--pathology-data-and-io-)
 9. [Phase V3 — the MRI perturbation bank ⬜](#9-phase-v3--the-mri-perturbation-bank-)
@@ -532,7 +532,7 @@ stableseg phantom
 stableseg describe data/phantom/images/phantom_000.nii.gz
 ```
 
-Expected, in order: `38 passed`, then `{ "stableseg": "0.1.0" }`, then a block
+Expected, in order: `54 passed`, then `{ "stableseg": "0.1.0" }`, then a block
 containing `"mean_true_volume_mm3": 2269.75`, then a description of one file.
 
 Taking the third one on its own:
@@ -687,7 +687,7 @@ The frame everything else hangs on. Nothing here measures a hippocampus.
 - **File loading** that never separates the numbers from their physical size
 - A **phantom generator**, so tests need no download
 - A **command-line tool** and a **function layer** underneath it
-- **38 automated checks**, running in under a second
+- **54 automated checks**, running in under a second
 - **Automated verification** on six platform combinations, on every push
 
 ### Why this first, and not the interesting part
@@ -720,7 +720,7 @@ automated verification does on every push.
 ### How you know it worked
 
 ```bash
-pytest -q                        # 38 passed
+pytest -q                        # 54 passed
 stableseg phantom                # mean_true_volume_mm3: 2269.75
 python scripts/preflight.py      # Clear to commit and push.
 ```
@@ -964,10 +964,10 @@ used for, and what it cannot show — written before its download script.
 
 ---
 
-## 7e. Phase P1a — the synthetic H&E phantom ⬜
+## 7e. Phase P1a — the synthetic H&E phantom ✅
 
-**Status: next.** Track P's first piece of code, and the smallest phase in the
-project.
+**Status: built.** Track P's first piece of code, and the smallest phase in
+the project.
 
 ### What it is
 
@@ -992,7 +992,41 @@ optical density rather than brightness. How a known-truth tile is built.
 
 ### 🔗 The detail
 
-`docs/04-phase-tutorials/phase-P1a-he-phantom.md` — arrives with the phase.
+[`docs/04-phase-tutorials/phase-P1a-he-phantom.md`](docs/04-phase-tutorials/phase-P1a-he-phantom.md)
+— what a stained slide is, why colour is mixed in optical density, every
+file explained, and the checks.
+
+### How you know it worked
+
+```bash
+stableseg he-phantom             # ends with: "mean_nuclear_area_um2": 2950.875
+pytest -q                        # 54 passed
+```
+
+`2950.875` is Track P's checkpoint, the twin of Track V's `2269.75`: the mean
+total nuclear area per tile in square microns, identical on every machine.
+
+![The phantom tile, its known truth, and what colour deconvolution recovers](docs/img/he_phantom_tile000.png)
+
+*Tile 000: picture, known truth, the hematoxylin channel recovered from the
+picture alone by colour deconvolution — every nucleus, proving the phantom
+lives in the model real tools assume — and the truth outlined.*
+
+### Commit it
+
+```bash
+git switch develop
+git add -A
+git commit -m "phase P1a: synthetic H&E phantom - tile abstraction, OD-model generator, config, API, CLI, tests, figure"
+git push origin develop develop:beta develop:master
+
+## --tags is optional, only when required
+## then switch back to local master and pull in the remote changes
+
+git switch master
+git pull --ff-only origin master
+git switch develop
+```
 
 ---
 

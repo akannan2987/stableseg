@@ -46,6 +46,20 @@ Both are pointers to a commit. The difference is what they do afterwards.
 | Everyday version | a bookmark in a book you are still writing | a page number printed in the index |
 | In this project | `master`, `beta`, `develop` | `v0.1.0`, `v0.2.0`, ... |
 
+```mermaid
+flowchart LR
+    C1["commit<br/>phase 1"] --> C2["commit<br/>phase 1b"] --> C3["commit<br/>phase 1c"] --> C4["commit<br/>(future work)"] --> C5["..."]
+    T1["🏷️ v0.1.0<br/><i>never moves</i>"] -.pinned to.-> C3
+    BR["develop / master<br/><i>keep moving forward</i>"] -.currently at.-> C5
+
+    classDef commit fill:#F5F5F5,stroke:#BBBBBB,color:#333;
+    classDef tag fill:#E6F4EA,stroke:#4CAF7D,color:#0B3D2E;
+    classDef branch fill:#E8F0FE,stroke:#5B8DEF,color:#0B2545;
+    class C1,C2,C3,C4,C5 commit
+    class T1 tag
+    class BR branch
+```
+
 We use **annotated tags** (`git tag -a`), which carry a message, an author and
 a date — a proper label, not just a sticky note. The alternative
 ("lightweight" tags) stores only the pointer; for releases, always annotated.
@@ -101,7 +115,7 @@ ruff check .
 pytest -q
 python scripts/preflight.py
 ```
-Expected: `All checks passed!`, `38 passed`, `Clear to commit and push.`
+Expected: `All checks passed!`, `54 passed`, `Clear to commit and push.`
 
 And if R is installed:
 ```bash

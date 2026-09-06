@@ -39,15 +39,45 @@ class PhantomSpec(BaseModel):
         return v
 
 
+class HEPhantomSpec(BaseModel):
+    """Settings for the synthetic H&E phantom generator (Track P's built-in dataset).
+
+    Mirrors PhantomSpec. Sizes are given in microns, not pixels, because a
+    nucleus has a physical size and the pixel count follows from the mpp.
+    """
+
+    n_tiles: int = Field(default=8, ge=1, le=500, description="How many phantom tiles to make.")
+    shape: tuple[int, int] = Field(default=(256, 256), description="Tile size in pixels (height, width).")
+    mpp: float = Field(default=0.5, gt=0.0, description="Microns per pixel; 0.5 is a 20x scan.")
+    n_nuclei: int = Field(default=60, ge=1, le=2000, description="Nuclei drawn per tile.")
+    nucleus_radius_um: tuple[float, float] = Field(
+        default=(3.0, 6.0), description="Range of nucleus semi-axis, in microns."
+    )
+    illumination_strength: float = Field(default=0.08, ge=0.0, description="Slow brightness gradient.")
+    noise_sd: float = Field(default=0.02, ge=0.0, description="Noise on stain concentrations.")
+    seed: int = Field(default=42, description="Random seed; same seed, same tiles, any machine.")
+
+    @field_validator("shape")
+    @classmethod
+    def _shape_is_reasonable(cls, v: tuple[int, int]) -> tuple[int, int]:
+        if any(s < 32 for s in v):
+            raise ValueError("each tile dimension must be at least 32 pixels")
+        return v
+
+
 class DataSpec(BaseModel):
     """Where the images come from."""
 
-    source: Literal["phantom", "nifti_folder"] = Field(
+    source: Literal["phantom", "nifti_folder", "he_phantom"] = Field(
         default="phantom",
-        description="'phantom' generates data; 'nifti_folder' reads real NIfTI files.",
+        description=(
+            "'phantom' generates MRI phantoms; 'nifti_folder' reads real NIfTI files; "
+            "'he_phantom' generates synthetic H&E tiles (Track P)."
+        ),
     )
     root: Path = Field(default=Path("data/phantom"), description="Folder holding images/ and labels/.")
     phantom: PhantomSpec = Field(default_factory=PhantomSpec)
+    he_phantom: HEPhantomSpec = Field(default_factory=HEPhantomSpec)
 
 
 class OutputSpec(BaseModel):

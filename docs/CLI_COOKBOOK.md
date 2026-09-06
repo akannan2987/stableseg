@@ -268,6 +268,82 @@ datasets, two settings files, no ambiguity about which produced what.
 
 ---
 
+## 3b · Generating Track P data
+
+### 3b.1 Generate the H&E phantom tiles
+
+```bash
+stableseg he-phantom
+```
+
+```json
+{
+  "data_root": ".../data/he_phantom",
+  "n_tiles": 8,
+  "manifest": ".../data/he_phantom/manifest.csv",
+  "run_dir": ".../runs/he-phantom-smoke",
+  "mean_true_nuclei": 60.0,
+  "mean_nuclear_area_um2": 2950.875
+}
+```
+
+**`2950.875` is Track P's checkpoint**, the twin of `2269.75`: the mean total
+nuclear area per tile in square microns over the eight default tiles,
+identical on every machine. A **synthetic H&E phantom** is a generated tile
+with nuclei drawn as ellipses and coloured through the hematoxylin/eosin
+optical-density model, so the number, positions and sizes of nuclei are
+known exactly. Synthetic, not tissue from anyone; the
+[phase P1a tutorial](04-phase-tutorials/phase-P1a-he-phantom.md) explains the
+model from zero.
+
+### 3b.2 Inspect a tile
+
+```bash
+stableseg describe-tile data/he_phantom/images/he_phantom_000.png
+```
+
+```json
+{
+  "shape": [256, 256, 3],
+  "dtype": "uint8",
+  "mpp": 0.5,
+  "pixel_area_um2": 0.25,
+  "field_um": [128.0, 128.0],
+  "channels": ["R", "G", "B"],
+  "level": 0,
+  "synthetic": true,
+  ...
+}
+```
+
+`mpp` — microns per pixel — is the field to care about, exactly as
+`spacing_mm` is for a volume: it turns a pixel count into an area, and getting
+it wrong by a factor of two makes every area wrong by four. The geometry lives
+in a `.json` sidecar beside each PNG; `describe-tile` refuses a PNG without
+one, because a picture whose physical size is unknown cannot be measured.
+
+### 3b.3 Read the answer key
+
+```bash
+cat data/he_phantom/manifest.csv
+head -3 data/he_phantom/nuclei.csv
+```
+Windows PowerShell: `Get-Content data\he_phantom\manifest.csv`
+
+One row per tile (nucleus count, nuclear area, mpp, `synthetic`), and one row
+per nucleus (centre, semi-axes in microns, orientation, area).
+
+### 3b.4 Prove the answer key from Python
+
+```python
+from stableseg.pathology.tile import load_label_tile
+labels = load_label_tile("data/he_phantom/labels/he_phantom_000.png")
+print(labels.max())                    # 60
+print((labels > 0).sum() * 0.25)       # nuclear area in µm², matching the manifest
+```
+
+---
+
 ## 4 · Inspecting a volume
 
 ### 4.1 Summarise one file
@@ -500,7 +576,7 @@ pytest -q                        # run every automated check
 ```
 16 files left unchanged
 All checks passed!
-38 passed in 0.6s
+54 passed in 0.6s
 ```
 
 **What each is for.** `ruff format` rewrites files to one style, so nobody
@@ -603,7 +679,8 @@ skipped. Each appears here, with real pasted output, when its phase lands.
 
 | Phase | Commands it will add |
 |---|---|
-| 2 · Real data | `stableseg fetch-msd`, `stableseg describe` on a real scan, DICOM import |
+| V2 · Real data | `stableseg fetch-msd`, `stableseg describe` on a real scan, DICOM import |
+| P1 · Pathology data | `stableseg fetch-pathology <dataset>`, `describe-tile` on a real tile, streamed slide |
 | 3 · Perturbations | `stableseg perturb --profile mri`, listing available disturbances |
 | 4 · Segment & measure | `stableseg segment`, `stableseg measure`, SQL queries against the results database |
 | 5 · Statistics | `stableseg audit`, `stableseg sample-size --detect 5%`, and the R cross-check with `irr` / `psych` / `blandr` |

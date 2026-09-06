@@ -83,3 +83,26 @@ def test_phantom_prefers_a_local_config_when_one_exists(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload["n_cases"] == 2  # the file's value, not the default 8
+
+
+def test_he_phantom_runs_from_an_empty_folder(tmp_path, monkeypatch):
+    """Track P's command must work on an installed copy, like `phantom` does since 0.1.1."""
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["he-phantom"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["n_tiles"] == 8
+    assert abs(payload["mean_true_nuclei"] - 60.0) < 1e-9
+    assert (tmp_path / "data" / "he_phantom" / "manifest.csv").exists()
+    assert (tmp_path / "runs" / "he-phantom-smoke" / "run.json").exists()
+
+
+def test_describe_tile_reports_geometry(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    runner.invoke(app, ["he-phantom"])
+    result = runner.invoke(app, ["describe-tile", "data/he_phantom/images/he_phantom_000.png"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["mpp"] == 0.5
+    assert payload["channels"] == ["R", "G", "B"]
+    assert payload["synthetic"] is True

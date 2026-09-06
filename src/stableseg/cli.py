@@ -80,3 +80,36 @@ def validate_config(config: Path = typer.Argument(..., exists=True, help="Run co
 
 if __name__ == "__main__":  # allows `python -m stableseg.cli`
     app()
+
+
+@app.command("he-phantom")
+def he_phantom(
+    config: Path | None = typer.Option(
+        None, "--config", "-c", exists=True, help="Run config (YAML). Defaults are used if omitted."
+    ),
+) -> None:
+    """Generate the synthetic H&E phantom tiles (Track P), from a config file or from defaults.
+
+    Same three-step config resolution as `phantom`: an explicit --config path;
+    else configs/he_phantom.yaml if present in the current folder; else the
+    built-in defaults, which are identical to that file.
+    """
+    if config is not None:
+        cfg = AuditConfig.from_yaml(config)
+    elif Path("configs/he_phantom.yaml").exists():
+        cfg = AuditConfig.from_yaml(Path("configs/he_phantom.yaml"))
+    else:
+        cfg = AuditConfig(
+            name="he-phantom-smoke",
+            data={"source": "he_phantom", "root": "data/he_phantom"},
+            output={"run_name": "he-phantom-smoke"},
+        )
+    _emit(api.generate_he_phantoms(cfg))
+
+
+@app.command("describe-tile")
+def describe_tile(
+    path: Path = typer.Argument(..., exists=True, help="A PNG tile written by this tool."),
+) -> None:
+    """Summarise a 2-D tile: shape, microns per pixel, channels, intensity range."""
+    _emit(api.describe_tile(path))

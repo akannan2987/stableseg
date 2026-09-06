@@ -53,7 +53,7 @@ and Linux with Python 3.12 or 3.13.
 | The first biomarker: label volume in cubic millimetres | `io.label_volume_mm3` |
 | Deterministic synthetic MRI phantom generator with known true volumes | `phantom.py` |
 | Command-line tool: `version`, `describe`, `phantom`, `validate-config` | `cli.py` |
-| 38 automated checks, no download needed, under a second | `tests/` |
+| 54 automated checks, no download needed, under a second | `tests/` |
 | Automated checks on 3 operating systems × 2 Python versions | `.github/workflows/ci.yml` |
 | Pre-push safety check for credentials, oversized files, private paths | `scripts/preflight.py` |
 | R toolchain verified against the Python reference value | `R/verify_setup.R` |
