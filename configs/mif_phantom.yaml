@@ -1,0 +1,25 @@
+# Synthetic multiplex-immunofluorescence tiles with a KNOWN phenotype per cell.
+#
+# Five channels (DAPI, PanCK, CD3, CD8, CD68) written as OME-TIFF with the
+# channel names inside the file. Every cell is assigned a phenotype from fixed
+# proportions (45% tumour, 15% helper T, 15% cytotoxic T, 10% macrophage,
+# 15% other), so density-per-phenotype and neighbourhood statistics in phase
+# P3 have an answer key. Written with tifffile, which the core install carries.
+
+name: mif-phantom-smoke
+
+data:
+  source: mif_phantom
+  root: data/mif_phantom
+  mif_phantom:
+    n_tiles: 8
+    shape: [256, 256]
+    mpp: 0.5
+    n_cells: 80
+    nucleus_radius_um: [3.0, 5.0]
+    noise_sd: 0.03
+    seed: 42
+
+output:
+  root: runs
+  run_name: mif-phantom-smoke

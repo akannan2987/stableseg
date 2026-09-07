@@ -16,10 +16,11 @@ The geometry that matters here:
   resolution). The mpp already encodes the consequence, but the level is kept
   because readers ask for it.
 
-Phase P1 generalises `Volume` and `Tile` under one base (`image.py`) so that
-a 3-D volume, an RGB tile and a multichannel stack share the rule "numbers
-and geometry travel together". Until then `Tile` stands alone and mirrors
-`Volume` deliberately, so that unification is a rename rather than a rewrite.
+Both `Tile` and `Volume` inherit the project-wide geometry contract from
+`stableseg.image.ImageBase`: a `spacing` in a stated `unit`, a synthetic flag,
+and a shared description - so a 3-D volume, an RGB tile and a multichannel
+stack all obey the rule "numbers and geometry travel together", each in its
+own terms.
 """
 
 from __future__ import annotations
@@ -31,9 +32,11 @@ from typing import Any
 import numpy as np
 from PIL import Image
 
+from stableseg.image import ImageBase
+
 
 @dataclass(frozen=True)
-class Tile:
+class Tile(ImageBase):
     """A 2-D image (H, W, C) with its physical geometry attached.
 
     `data` is height x width x channels. Dtype is whatever the source gives:
@@ -61,6 +64,19 @@ class Tile:
             )
         if not self.mpp > 0:
             raise ValueError("mpp must be a positive number of microns per pixel")
+
+    # ---- the shared contract (ImageBase) --------------------------------------
+    @property
+    def unit(self) -> str:
+        return "um"
+
+    @property
+    def spacing(self) -> tuple[float, float]:
+        return (self.mpp, self.mpp)
+
+    @property
+    def is_synthetic(self) -> bool:
+        return self.synthetic
 
     # ---- geometry ----------------------------------------------------------
     @property

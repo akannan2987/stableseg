@@ -335,6 +335,32 @@ holding two rather than guessing which slices belong together.
 axes; ignore that and a brain's left becomes its right. The project converts
 everything to RAS so all scans share one frame.
 
+**Extra (optional dependency group).** A named set of packages a project
+lists as optional: install the core alone, or the core plus the extra.
+Here `[pathology]` holds the whole-slide reader and spatial-transcriptomics
+tools. *Everyday version:* the roof rack you add to the car when you need to
+carry a bicycle.
+
+**Lock file.** A list of exact package versions, so two people installing on
+different days get identical libraries. `requirements.lock` for the core,
+`requirements-pathology.lock` for the extra; regenerated only in a clean
+environment.
+
+**DAB.** The brown chromogen of immunohistochemistry — the colour a positive
+cell turns. In optical density it is its own stain vector, beside
+hematoxylin and eosin, which is how colour deconvolution separates it.
+
+**Thumbnail.** A small copy of a whole slide, read from the top of the
+pyramid, used for overview and for deciding where the tissue is.
+
+**Saturation.** How colourful a pixel is, from grey (none) to vivid (full).
+Glass on a slide is bright and unsaturated; stained tissue is coloured. The
+tissue detector thresholds this.
+
+**Otsu's method.** A way of choosing a threshold automatically: pick the
+value that best splits the pixels into two groups. Used here to separate
+tissue from glass on the thumbnail.
+
 **Manifest.** A plain table listing every case in a dataset with its key facts.
 Ours is `data/phantom/manifest.csv`, one row per phantom with its known true
 volumes. *Everyday version:* the packing list in a shipping crate.

@@ -304,6 +304,49 @@ dependencies, I already installed the pinned ones".
 
 ---
 
+
+## 7b. The pathology extra (optional, Track P)
+
+**What it is.** Track P — the digital-pathology half of the project — needs
+two things the core never does: a reader for the many proprietary
+whole-slide formats (**OpenSlide**, which ships a native library), and the
+spatial-transcriptomics tools (HDF5, zarr). Someone auditing MRI volumes
+should not install any of that. So they live in an **optional extra**: a
+named group of packages you add only if you want them. Everyday version: the
+car comes with the engine; the roof rack is an option.
+
+**When you need it.** Only for reading whole slides (`describe-slide`,
+`slide-tiles`) and, from phase P1b, spatial-transcriptomics tables. The
+phantoms, OME-TIFF and everything on Track V work without it. Skip this
+section now and come back when a phase asks for it — nothing breaks.
+
+**How it is pinned.** `requirements-pathology.lock` holds the exact versions,
+resolved in a clean environment so the core's pins cannot change. Install
+both lock files; never regenerate one from a working environment (see
+`CONTRIBUTING.md`, *Lock files*).
+
+With the environment active, in the project folder:
+
+```powershell
+python -m pip install -r requirements-pathology.lock
+python -c "import openslide; print('OpenSlide', openslide.__library_version__)"
+```
+Expected: `OpenSlide 4.x.x`. The native library (a DLL) arrives inside the
+`openslide-bin` wheel — nothing to download separately, no PATH editing, no
+Visual C++ runtime to hunt for. Windows 10 or newer, 64-bit Python.
+
+Verify the reader end to end:
+```powershell
+pytest -q tests\test_pathology_io.py
+```
+Expected: `16 passed` (with the extra) — `11 passed, 5 skipped` without it.
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `No matching distribution found for openslide-bin` | 32-bit Python, or Windows older than 10 | use 64-bit Python 3.13 (section 2) |
+| `ImportError: ... needs the optional pathology extra` | extra not installed in *this* environment | activate `.venv`, run the install line above |
+| `OSError: ... libopenslide` | an older `openslide-python` found a system OpenSlide first | `python -m pip install --force-reinstall -r requirements-pathology.lock` |
+
 ## 8. Prove it works
 
 ```powershell
@@ -314,7 +357,7 @@ Expected: `0.1.0`
 ```powershell
 pytest -q
 ```
-Expected: `74 passed in 0.6s` (the time varies).
+Expected: `92 passed in 0.6s` (the time varies).
 
 ```powershell
 stableseg version

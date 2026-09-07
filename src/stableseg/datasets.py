@@ -73,7 +73,7 @@ DATASETS: dict[str, DatasetInfo] = {
         unpacked_dir="Task04_Hippocampus",
         license="CC BY-SA 4.0",
         data_card="docs/data-cards/msd-hippocampus.md",
-        approx_mb=27,
+        approx_mb=28,
         track="V",
     ),
 }

@@ -2,7 +2,7 @@
 
 [← Build guide](../../BUILD_GUIDE.md) · [README](../../README.md) · [Glossary](../00-glossary.md) · [Data card](../data-cards/msd-hippocampus.md) · [Phase 1](phase-01-skeleton.md)
 
-**Prerequisites:** phase 1 complete; an internet connection for one 27 MB
+**Prerequisites:** phase 1 complete; an internet connection for one 28 MB
 download.
 **Learning goal:** after this page you can fetch a public medical dataset the
 safe way — verified, not trusted — catalogue it, read a real brain scan, and
@@ -12,7 +12,7 @@ DICOM and NIfTI disagree about which way is left.
 **Time:** about ninety minutes, including the download.
 **Checkpoint:** `stableseg fetch msd_task04_hippocampus` ends with
 `"MD5 verified"`; `stableseg dataset-summary` reports the case counts; the
-real-scan figure exists in `docs/img/`; `pytest -q` prints `74 passed`.
+real-scan figure exists in `docs/img/`; `pytest -q` prints `92 passed`.
 
 ---
 
@@ -41,7 +41,7 @@ phantoms never made you deal with:
 
 The **Medical Segmentation Decathlon, Task04 Hippocampus**: small MRI volumes
 cropped around the hippocampus, with expert outlines of its two parts. Real
-brains, de-identified, CC BY-SA 4.0, about 27 MB. Everything about it —
+brains, de-identified, CC BY-SA 4.0, 28.4 MB. Everything about it —
 source, licence, size, what it can and cannot show — is on its
 [data card](../data-cards/msd-hippocampus.md), which was written before the
 download script, as every dataset's is.
@@ -108,7 +108,7 @@ Lists what can be fetched, with licence and card. Then:
 stableseg fetch msd_task04_hippocampus
 ```
 
-A progress line ticks up to about 27 MB, then:
+A progress line ticks up to 28.4 MB, then:
 
 ```json
 {
@@ -156,21 +156,23 @@ stableseg dataset-summary data/Task04_Hippocampus --manifest runs/msd-manifest.c
   "n_train": 260,
   "n_test": 130,
   "spacing_x_mm_min": 1.0, "spacing_x_mm_max": 1.0,
-  "shape_x_min": 31,      "shape_x_max": 43,
-  ...
+  "shape_x_min": 30,      "shape_x_max": 43,
+  "spacing_y_mm_min": 1.0, "spacing_y_mm_max": 1.0,
+  "shape_y_min": 40,      "shape_y_max": 59,
+  "spacing_z_mm_min": 1.0, "spacing_z_mm_max": 1.0,
+  "shape_z_min": 24,      "shape_z_max": 47
 }
 ```
 
-Your exact numbers are the truth; paste them into the
-[data card](../data-cards/msd-hippocampus.md) if they differ from what it
-says. Two things to read from this before anything else:
+These are observed values, pasted from a real run of this command. Two
+things to read from them before anything else:
 
 - **Spacing.** Every voxel is 1 mm on each side in every case. That is the
   single most useful thing to know about a new dataset, because a dataset
   whose spacing *varies* is one whose volumes must be compared in
   millimetres, never in voxels. The catalogue reads it from every file's
   header so you never assume it.
-- **Shapes vary** (31 to 43 voxels along x, and similarly on the other axes):
+- **Shapes vary** (30 to 43 voxels along x, 40 to 59 along y, 24 to 47 along z):
   the volumes are cropped around the structure, each to its own size. Phase
   V4's preprocessing resamples them to a common grid.
 
@@ -192,16 +194,22 @@ stableseg describe data/Task04_Hippocampus/imagesTr/hippocampus_001.nii.gz
 ```json
 {
   "shape": [35, 51, 35],
+  "dtype": "uint8",
   "spacing_mm": [1.0, 1.0, 1.0],
   "voxel_volume_mm3": 1.0,
-  "min": 0.0, "max": 1211.0, "mean": 251.1,
-  ...
+  "min": 2.0,
+  "max": 139.0,
+  "mean": 63.52,
+  "n_nonzero": 62475,
+  "path": "data/Task04_Hippocampus/imagesTr/hippocampus_001.nii.gz"
 }
 ```
 
-The intensity range is arbitrary — MRI has no fixed physical scale, unlike CT
-— which is why phase V4 normalises intensities before anything compares
-them.
+Observed output. Two things it tells you: the file is **8-bit** (values 0 to
+255 at most, here 2 to 139), which is unusual for MRI and means the intensity
+scale was compressed before release; and the range is arbitrary anyway — MRI
+has no fixed physical scale, unlike CT — which is why phase V4 normalises
+intensities before anything compares them.
 
 Now the outlines. The expert traced two parts, labelled 1 and 2:
 
@@ -211,8 +219,14 @@ lbl = load_volume("data/Task04_Hippocampus/labelsTr/hippocampus_001.nii.gz")
 print(label_volume_mm3(lbl, 1), label_volume_mm3(lbl, 2))
 ```
 
-Two volumes in cubic millimetres — the first real biomarker values in the
-project. Note that they are an **expert's opinion**, not arithmetic: unlike a
+```
+1324.0 1624.0
+```
+
+Two volumes in cubic millimetres — anterior part 1,324 mm³, posterior part
+1,624 mm³, 2,948 mm³ together — the first real biomarker values in the
+project, and comfortably inside the published range for an adult
+hippocampus. Note that they are an **expert's opinion**, not arithmetic: unlike a
 phantom, nobody knows the true volume of a real hippocampus. That is why
 phantoms exist and why the statistics are about *repeatability*, not
 accuracy.

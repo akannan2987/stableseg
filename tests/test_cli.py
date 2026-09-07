@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from stableseg import __version__
@@ -137,3 +138,35 @@ def test_dicom_to_nifti_command(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
     assert payload["spacing_mm"] == [1.0, 1.0, 2.5]
+
+
+def test_ihc_and_mif_phantom_commands_from_an_empty_folder(tmp_path, monkeypatch):
+    pytest.importorskip("tifffile")
+    monkeypatch.chdir(tmp_path)
+    r1 = runner.invoke(app, ["ihc-phantom"])
+    assert r1.exit_code == 0, r1.output
+    assert abs(json.loads(r1.output)["mean_positive_fraction_true"] - 0.35) < 1e-9
+    r2 = runner.invoke(app, ["mif-phantom"])
+    assert r2.exit_code == 0, r2.output
+    assert json.loads(r2.output)["mean_phenotype_counts_true"]["tumour"] == 36.0
+
+
+def test_describe_slide_and_slide_tiles_commands(tmp_path, monkeypatch):
+    pytest.importorskip("openslide")
+    import numpy as np
+
+    from stableseg.pathology.io import write_pyramidal_tiff
+
+    monkeypatch.chdir(tmp_path)
+    # Coloured "tissue" on white glass: a flat grey picture has no colour
+    # saturation and the tissue detector would (correctly) find nothing.
+    rgb = np.full((512, 768, 3), 245, np.uint8)
+    rgb[64:448, 64:704] = (180, 110, 190)
+    write_pyramidal_tiff(rgb, 0.25, tmp_path / "s.tif", n_levels=2)
+    r = runner.invoke(app, ["describe-slide", "s.tif"])
+    assert r.exit_code == 0, r.output
+    assert json.loads(r.output)["mpp"] == 0.25
+    r = runner.invoke(app, ["slide-tiles", "s.tif", "--out", "tiles", "--limit", "4"])
+    assert r.exit_code == 0, r.output
+    assert json.loads(r.output)["n_tiles"] == 4
+    assert (tmp_path / "tiles" / "tile_0003.json").exists()

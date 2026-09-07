@@ -1,0 +1,27 @@
+# Synthetic immunohistochemistry tiles with a KNOWN positive fraction.
+#
+# IHC marks cells carrying one protein: positive nuclei turn brown (DAB),
+# negatives stay blue (hematoxylin counterstain). The biomarker is the
+# positive fraction, and this phantom sets it exactly - so phase P3's
+# positivity scoring can be checked against arithmetic before real tissue.
+# Every value here is also the default in src/stableseg/config.py.
+
+name: ihc-phantom-smoke
+
+data:
+  source: ihc_phantom
+  root: data/ihc_phantom
+  ihc_phantom:
+    n_tiles: 8
+    shape: [256, 256]
+    mpp: 0.5
+    n_nuclei: 60
+    positive_fraction: 0.35     # the truth: 21 of 60 nuclei positive
+    nucleus_radius_um: [3.0, 6.0]
+    illumination_strength: 0.08
+    noise_sd: 0.02
+    seed: 42
+
+output:
+  root: runs
+  run_name: ihc-phantom-smoke

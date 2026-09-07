@@ -160,3 +160,58 @@ def dicom_to_nifti(
 ) -> None:
     """Read a folder of DICOM slices and write one NIfTI volume, geometry preserved."""
     _emit(api.dicom_to_nifti(series_dir, out))
+
+
+def _phantom_cfg(config: Path | None, default_file: str, source: str, name: str) -> AuditConfig:
+    """The three-step config resolution shared by every phantom command."""
+    if config is not None:
+        return AuditConfig.from_yaml(config)
+    if Path(default_file).exists():
+        return AuditConfig.from_yaml(Path(default_file))
+    return AuditConfig(
+        name=name, data={"source": source, "root": f"data/{source}"}, output={"run_name": name}
+    )
+
+
+@app.command("ihc-phantom")
+def ihc_phantom(
+    config: Path | None = typer.Option(None, "--config", "-c", exists=True, help="Run config (YAML)."),
+) -> None:
+    """Generate synthetic IHC tiles with a known positive fraction (Track P)."""
+    _emit(
+        api.generate_ihc_phantoms(
+            _phantom_cfg(config, "configs/ihc_phantom.yaml", "ihc_phantom", "ihc-phantom-smoke")
+        )
+    )
+
+
+@app.command("mif-phantom")
+def mif_phantom(
+    config: Path | None = typer.Option(None, "--config", "-c", exists=True, help="Run config (YAML)."),
+) -> None:
+    """Generate synthetic multiplex-IF tiles as OME-TIFF with known phenotypes (Track P)."""
+    _emit(
+        api.generate_mif_phantoms(
+            _phantom_cfg(config, "configs/mif_phantom.yaml", "mif_phantom", "mif-phantom-smoke")
+        )
+    )
+
+
+@app.command("describe-slide")
+def describe_slide(
+    path: Path = typer.Argument(..., exists=True, help="A whole-slide image or pyramidal TIFF."),
+) -> None:
+    """Geometry of a whole-slide image: vendor, microns per pixel, pyramid levels (pathology extra)."""
+    _emit(api.describe_slide(path))
+
+
+@app.command("slide-tiles")
+def slide_tiles(
+    path: Path = typer.Argument(..., exists=True, help="A whole-slide image or pyramidal TIFF."),
+    out: Path = typer.Option(Path("runs/slide-tiles"), "--out", "-o", help="Folder for the tiles."),
+    size: int = typer.Option(256, "--size", help="Tile size in pixels."),
+    level: int = typer.Option(0, "--level", help="Pyramid level to read (0 = full resolution)."),
+    limit: int = typer.Option(32, "--limit", help="Maximum number of tissue tiles to write."),
+) -> None:
+    """Stream tissue tiles out of a slide as PNGs with geometry sidecars (needs the pathology extra)."""
+    _emit(api.slide_tiles(path, out, size=size, level=level, limit=limit))

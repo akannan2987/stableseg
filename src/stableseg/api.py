@@ -17,7 +17,11 @@ from stableseg import datasets as _datasets
 from stableseg.config import AuditConfig
 from stableseg.dicom import series_to_nifti
 from stableseg.io import load_volume, scan_dataset_folder
-from stableseg.pathology.phantom import generate_he_phantom_dataset
+from stableseg.pathology.phantom import (
+    generate_he_phantom_dataset,
+    generate_ihc_phantom_dataset,
+    generate_mif_phantom_dataset,
+)
 from stableseg.pathology.tile import load_tile
 from stableseg.phantom import generate_phantom_dataset
 from stableseg.storage import LocalStorage, stamp_run
@@ -163,3 +167,96 @@ def dicom_to_nifti(series_dir: str | Path, out_path: str | Path) -> dict[str, An
     out = vol.describe()
     out["path"] = str(written)
     return out
+
+
+def generate_ihc_phantoms(config: AuditConfig) -> dict[str, Any]:
+    """Generate synthetic IHC tiles with a known positive fraction into `config.data.root`."""
+    spec = config.data.ihc_phantom
+    manifest = generate_ihc_phantom_dataset(
+        root=config.data.root,
+        n_tiles=spec.n_tiles,
+        positive_fraction=spec.positive_fraction,
+        seed=spec.seed,
+        shape=spec.shape,
+        mpp=spec.mpp,
+        n_nuclei=spec.n_nuclei,
+        nucleus_radius_um=spec.nucleus_radius_um,
+        illumination_strength=spec.illumination_strength,
+        noise_sd=spec.noise_sd,
+    )
+    storage = LocalStorage(config.output.root, config.output.run_name)
+    stamp_run(
+        storage,
+        config.model_dump(mode="json"),
+        extra={"step": "generate_ihc_phantoms", "n_tiles": int(len(manifest)), "modality": "pathology"},
+    )
+    return {
+        "data_root": str(Path(config.data.root).resolve()),
+        "n_tiles": int(len(manifest)),
+        "manifest": str((Path(config.data.root) / "manifest.csv").resolve()),
+        "run_dir": str(storage.run_dir),
+        "mean_positive_fraction_true": float(manifest["positive_fraction_true"].mean()),
+    }
+
+
+def generate_mif_phantoms(config: AuditConfig) -> dict[str, Any]:
+    """Generate synthetic multiplex-IF tiles (OME-TIFF) with known phenotypes into `config.data.root`."""
+    spec = config.data.mif_phantom
+    manifest = generate_mif_phantom_dataset(
+        root=config.data.root,
+        n_tiles=spec.n_tiles,
+        seed=spec.seed,
+        shape=spec.shape,
+        mpp=spec.mpp,
+        n_cells=spec.n_cells,
+        nucleus_radius_um=spec.nucleus_radius_um,
+        noise_sd=spec.noise_sd,
+    )
+    storage = LocalStorage(config.output.root, config.output.run_name)
+    stamp_run(
+        storage,
+        config.model_dump(mode="json"),
+        extra={"step": "generate_mif_phantoms", "n_tiles": int(len(manifest)), "modality": "pathology"},
+    )
+    counts = {
+        c[2:-5]: float(manifest[c].mean())
+        for c in manifest.columns
+        if c.startswith("n_") and c.endswith("_true") and c != "n_cells_true"
+    }
+    return {
+        "data_root": str(Path(config.data.root).resolve()),
+        "n_tiles": int(len(manifest)),
+        "manifest": str((Path(config.data.root) / "manifest.csv").resolve()),
+        "run_dir": str(storage.run_dir),
+        "mean_cells_true": float(manifest["n_cells_true"].mean()),
+        "mean_phenotype_counts_true": counts,
+    }
+
+
+def describe_slide(path: str | Path) -> dict[str, Any]:
+    """Geometry of a whole-slide image: vendor, microns per pixel, pyramid levels, physical field."""
+    from stableseg.pathology.io import describe_slide as _describe
+
+    return _describe(path)
+
+
+def slide_tiles(
+    path: str | Path, out_dir: str | Path, size: int = 256, level: int = 0, limit: int = 32
+) -> dict[str, Any]:
+    """Stream up to `limit` tissue tiles from a slide into PNGs with geometry sidecars."""
+    from stableseg.pathology.io import open_slide
+    from stableseg.pathology.tile import save_tile
+
+    out_dir = Path(out_dir)
+    written = []
+    with open_slide(path) as s:
+        for i, tile in enumerate(s.iter_tiles(size=size, level=level, tissue_only=True, limit=limit)):
+            written.append(str(save_tile(tile, out_dir / f"tile_{i:04d}.png")))
+        info = s.describe()
+    return {
+        "slide": info,
+        "n_tiles": len(written),
+        "out_dir": str(out_dir.resolve()),
+        "level": level,
+        "size": size,
+    }

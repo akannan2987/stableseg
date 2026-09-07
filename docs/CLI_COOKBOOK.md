@@ -386,7 +386,40 @@ Windows PowerShell: `Get-Content data\he_phantom\manifest.csv`
 One row per tile (nucleus count, nuclear area, mpp, `synthetic`), and one row
 per nucleus (centre, semi-axes in microns, orientation, area).
 
-### 3b.4 Prove the answer key from Python
+### 3b.4 The IHC and mIF phantoms
+
+```bash
+stableseg ihc-phantom            # "mean_positive_fraction_true": 0.35
+stableseg mif-phantom            # "tumour": 36.0, "T_helper": 12.0, "T_cytotoxic": 12.0, "macrophage": 8.0, "other": 12.0
+```
+
+Two more answer keys. **IHC**: a set share of nuclei stained brown (the
+positive fraction is the biomarker; the truth is in `cells.csv`). **mIF**:
+five fluorescent channels as OME-TIFF with the channel names inside the
+file; every cell's phenotype is in `cells.csv`. Both synthetic, both labelled.
+
+### 3b.5 Whole slides (pathology extra)
+
+```bash
+stableseg describe-slide path/to/slide.tif
+```
+```json
+{ "vendor": "generic-tiff", "mpp": 0.5, "level_count": 4,
+  "level_dimensions": [[3072, 2048], [1536, 1024], [768, 512], [384, 256]],
+  "level_downsamples": [1.0, 2.0, 4.0, 8.0], "field_mm": [1.536, 1.024] }
+```
+
+`level_dimensions` are **(width, height)** — OpenSlide's order, the reverse of
+NumPy's. `mpp` is read from the file; a slide without it is refused, not
+guessed.
+
+```bash
+stableseg slide-tiles path/to/slide.tif --out runs/slide-tiles --size 256 --limit 32
+```
+Streams up to 32 tissue tiles (glass skipped, decided on a thumbnail) into
+PNGs with geometry sidecars, without ever loading the whole slide.
+
+### 3b.6 Prove the answer key from Python
 
 ```python
 from stableseg.pathology.tile import load_label_tile
@@ -629,7 +662,7 @@ pytest -q                        # run every automated check
 ```
 16 files left unchanged
 All checks passed!
-74 passed in 0.6s
+92 passed in 0.6s
 ```
 
 **What each is for.** `ruff format` rewrites files to one style, so nobody
@@ -732,7 +765,7 @@ skipped. Each appears here, with real pasted output, when its phase lands.
 
 | Phase | Commands it will add |
 |---|---|
-| P1 · Pathology data | `stableseg fetch-pathology <dataset>`, `describe-tile` on a real tile, streamed slide |
+| P1b · Real slides | `stableseg fetch` for the pathology datasets, `slide-tiles` on a real scanner file, the spatial-transcriptomics reader |
 | 3 · Perturbations | `stableseg perturb --profile mri`, listing available disturbances |
 | 4 · Segment & measure | `stableseg segment`, `stableseg measure`, SQL queries against the results database |
 | 5 · Statistics | `stableseg audit`, `stableseg sample-size --detect 5%`, and the R cross-check with `irr` / `psych` / `blandr` |

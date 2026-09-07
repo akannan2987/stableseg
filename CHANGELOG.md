@@ -8,13 +8,29 @@ MINOR adds capability and a new PATCH only fixes things.
 
 ## [Unreleased]
 
-Planned for 0.2.0: real hippocampus MRI ingestion, the perturbation bank, the
-classical segmenter, biomarker extraction, and the first repeatability
-statistics. See `docs/05-roadmap.md`.
-
-## [Unreleased]
+Working toward 0.2.0 on both tracks: real data (V2 done, P1b next), the
+perturbation banks, the classical segmenters, biomarker extraction, and the
+first repeatability statistics. See `docs/05-roadmap.md`.
 
 ### Added
+- **Phase P1 — pathology data and I/O.** `src/stableseg/image.py`: `ImageBase`,
+  the geometry contract (`unit`, `spacing`, `element_measure`, `is_synthetic`)
+  that `Volume` and `Tile` now both inherit without changing their names,
+  fields or import paths. `pathology/phantom.py`: `render_stains` for any
+  stain set through the optical-density model; the **IHC phantom** (a set
+  fraction of nuclei stained brown via the DAB stain vector; the positive
+  fraction is the truth) and the **mIF phantom** (five named channels, every
+  cell's phenotype known, written as OME-TIFF). `pathology/io.py`: OME-TIFF
+  write/read with channel names and physical size inside the file; a
+  pyramidal-TIFF writer; a `Slide` wrapper over OpenSlide with tissue
+  detection (saturation, Otsu) and tissue-only tile iteration. Config specs,
+  API functions and commands `ihc-phantom`, `mif-phantom`, `describe-slide`,
+  `slide-tiles`; `configs/ihc_phantom.yaml`, `configs/mif_phantom.yaml`. The
+  **`[pathology]` extra** (OpenSlide with its bundled native library,
+  imagecodecs, zarr, anndata) with `requirements-pathology.lock` resolved in
+  a clean environment; the automated checks install it on all six platform
+  combinations. Eighteen new checks (92 total); the five whole-slide checks
+  skip with a message without the extra. Two figures.
 - **Phase V2 — real data.** `src/stableseg/datasets.py`: a dataset registry
   (URL, MD5, licence, data card) and an idempotent `fetch` that downloads to a
   temporary name, verifies the checksum, deletes on mismatch, and unpacks
@@ -71,6 +87,12 @@ statistics. See `docs/05-roadmap.md`.
   regenerated from code, never drawn by hand, so they cannot drift from what
   the code does.
 
+### Fixed
+- Numbers in the V2 documents corrected to observed values after the first
+  real fetch: 28.4 MB archive (not 27), shapes 30–43 × 40–59 × 24–47 voxels,
+  and an example `describe` output that had been written before being run —
+  replaced with the real one (8-bit, 2–139).
+
 ## [0.1.1] - 2026-09-02
 
 ### Fixed
@@ -106,7 +128,7 @@ First public release: a runnable skeleton with the full documentation set.
 - Deterministic synthetic phantom generator (`phantom.py`) writing NIfTI
   images, labels and a manifest with known true volumes.
 - Command-line interface: `version`, `describe`, `phantom`, `validate-config`.
-- Test suite (74 tests) that needs no download, including checks that the
+- Test suite (92 tests) that needs no download, including checks that the
   declared Python range matches what the pinned dependencies actually require.
 - `scripts/preflight.py`: a pre-push safety check for credentials, oversized
   files, force-added ignored paths, absolute home paths and mixed line

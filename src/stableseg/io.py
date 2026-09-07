@@ -19,10 +19,17 @@ from typing import Any
 import nibabel as nib
 import numpy as np
 
+from stableseg.image import ImageBase
+
 
 @dataclass
-class Volume:
-    """A 3-D image plus everything needed to interpret it physically."""
+class Volume(ImageBase):
+    """A 3-D image plus everything needed to interpret it physically.
+
+    Inherits the project-wide geometry contract from `ImageBase`; `spacing_mm`
+    and `describe()` are unchanged, and `spacing`/`unit` expose the same facts
+    in the shared vocabulary a Track P `Tile` also speaks.
+    """
 
     data: np.ndarray  # shape (x, y, z)
     affine: np.ndarray  # 4x4 matrix mapping voxel indices to world millimetres
@@ -38,6 +45,19 @@ class Volume:
     def voxel_volume_mm3(self) -> float:
         sx, sy, sz = self.spacing_mm
         return sx * sy * sz
+
+    # -- the shared contract (ImageBase) --
+    @property
+    def unit(self) -> str:
+        return "mm"
+
+    @property
+    def spacing(self) -> tuple[float, float, float]:
+        return self.spacing_mm
+
+    @property
+    def is_synthetic(self) -> bool:
+        return bool(self.meta.get("synthetic", False))
 
     @property
     def shape(self) -> tuple[int, ...]:

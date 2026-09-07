@@ -42,6 +42,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -49,14 +50,16 @@ import pandas as pd
 from stableseg.pathology.tile import Tile, save_label_tile, save_tile
 
 # Optical-density colour of each pure stain (Ruifrok & Johnston 2001), the
-# same vectors scikit-image's rgb2hed uses. Rows: hematoxylin, eosin.
+# same vectors scikit-image's rgb2hed uses. Rows: hematoxylin, eosin, DAB.
 STAIN_VECTORS = np.array(
     [
         [0.65, 0.70, 0.29],  # hematoxylin: absorbs red and green, lets blue through -> looks blue-purple
         [0.07, 0.99, 0.11],  # eosin: absorbs green -> looks pink
+        [0.27, 0.57, 0.78],  # DAB: the brown chromogen of immunohistochemistry
     ],
     dtype=np.float32,
 )
+HEMATOXYLIN, EOSIN, DAB = 0, 1, 2
 
 DEFAULT_MPP = 0.5  # 20x scan: one pixel is half a micron
 
@@ -94,17 +97,57 @@ def _illumination(shape: tuple[int, int], rng: np.random.Generator, strength: fl
     return (1.0 + strength * (a * ys + b * xs) / 2.0).astype(np.float32)
 
 
-def render_he(h_conc: np.ndarray, e_conc: np.ndarray, illumination: np.ndarray | None = None) -> np.ndarray:
-    """Turn per-pixel stain concentrations into an RGB uint8 picture via the OD model.
+def render_stains(
+    concentrations: dict[int, np.ndarray], illumination: np.ndarray | None = None
+) -> np.ndarray:
+    """Turn per-pixel concentrations of any stains into an RGB uint8 picture via the OD model.
 
-    Kept separate and public because phase P2's stain perturbations and phase P7's
-    synthetic-tile generation call exactly this function with different inputs.
+    `concentrations` maps a row of STAIN_VECTORS to a (H, W) array. Optical
+    densities add; the picture is 255 * exp(-OD). This is the one place the
+    project turns "how much stain" into "what colour", which is why phase P2's
+    stain perturbations and phase P7's synthetic tiles all call it.
     """
-    od = h_conc[:, :, None] * STAIN_VECTORS[0] + e_conc[:, :, None] * STAIN_VECTORS[1]
+    od = None
+    for idx, conc in concentrations.items():
+        term = conc[:, :, None] * STAIN_VECTORS[idx]
+        od = term if od is None else od + term
     transmitted = np.exp(-od)  # fraction of light that gets through each pixel
     if illumination is not None:
         transmitted = transmitted * illumination[:, :, None]
     return np.clip(transmitted * 255.0, 0, 255).astype(np.uint8)
+
+
+def render_he(h_conc: np.ndarray, e_conc: np.ndarray, illumination: np.ndarray | None = None) -> np.ndarray:
+    """H&E picture from hematoxylin and eosin concentrations (a named case of render_stains)."""
+    return render_stains({HEMATOXYLIN: h_conc, EOSIN: e_conc}, illumination)
+
+
+def _place_nuclei(
+    rng: np.random.Generator,
+    shape: tuple[int, int],
+    n_nuclei: int,
+    r_lo: float,
+    r_hi: float,
+) -> tuple[np.ndarray, list[NucleusTruth]]:
+    """Rejection-sample non-overlapping ellipses; shared by the H&E, IHC and mIF phantoms."""
+    h, w = shape
+    labels = np.zeros(shape, dtype=np.int32)
+    truths: list[NucleusTruth] = []
+    attempts = 0
+    while len(truths) < n_nuclei and attempts < n_nuclei * 50:
+        attempts += 1
+        a = rng.uniform(r_lo, r_hi)
+        b = a * rng.uniform(0.6, 1.0)
+        theta = rng.uniform(0, np.pi)
+        cy = rng.uniform(a, h - a)
+        cx = rng.uniform(a, w - a)
+        mask = _nucleus_mask(shape, cy, cx, a, b, theta)
+        if labels[mask].any():
+            continue
+        inst = len(truths) + 1
+        labels[mask] = inst
+        truths.append(NucleusTruth(inst, cy, cx, a, b, theta, int(mask.sum())))
+    return labels, truths
 
 
 def generate_he_phantom(
@@ -226,4 +269,218 @@ def generate_he_phantom_dataset(
     root.mkdir(parents=True, exist_ok=True)
     manifest.to_csv(root / "manifest.csv", index=False)
     pd.DataFrame(nucleus_rows).to_csv(root / "nuclei.csv", index=False)
+    return manifest
+
+
+# ---------------------------------------------------------------------------
+# IHC phantom: a known fraction of nuclei are "positive" (brown, DAB)
+# ---------------------------------------------------------------------------
+
+
+def generate_ihc_phantom(
+    seed: int,
+    tile_index: int,
+    shape: tuple[int, int] = (256, 256),
+    mpp: float = DEFAULT_MPP,
+    n_nuclei: int = 60,
+    positive_fraction: float = 0.35,
+    nucleus_radius_um: tuple[float, float] = (3.0, 6.0),
+    illumination_strength: float = 0.08,
+    noise_sd: float = 0.02,
+) -> tuple[Tile, np.ndarray, list[NucleusTruth], np.ndarray]:
+    """One IHC tile: a known fraction of nuclei stained brown (DAB), the rest blue (hematoxylin).
+
+    Immunohistochemistry marks cells that carry one specific protein. In the
+    common nuclear stains (Ki-67, ER, PR) a positive nucleus turns brown and a
+    negative one stays blue from the counterstain. The biomarker is the
+    positive fraction, and this phantom knows it exactly: `positive` is a
+    boolean per nucleus, and `positive.mean()` is the truth.
+
+    Positive nuclei get strong DAB and weak hematoxylin (DAB masks the blue);
+    negatives get hematoxylin only. Intensities vary per nucleus, because real
+    positivity is graded - which is what the H-score measures.
+    """
+    rng = np.random.default_rng([seed, tile_index, 1])
+    r_lo, r_hi = (r / mpp for r in nucleus_radius_um)
+    labels, truths = _place_nuclei(rng, shape, n_nuclei, r_lo, r_hi)
+    n = len(truths)
+    positive = np.zeros(n, dtype=bool)
+    positive[: int(round(positive_fraction * n))] = True
+    rng.shuffle(positive)
+
+    nuclear = labels > 0
+    h_conc = np.where(nuclear, 0.9, 0.05).astype(np.float32)
+    d_conc = np.zeros(shape, dtype=np.float32)
+    e_conc = np.where(nuclear, 0.0, rng.uniform(0.15, 0.25)).astype(np.float32)  # faint background
+    for t, pos in zip(truths, positive, strict=True):
+        m = labels == t.instance_id
+        if pos:
+            d_conc[m] = rng.uniform(0.8, 1.4)  # graded: weak to strong DAB
+            h_conc[m] = 0.25
+        else:
+            h_conc[m] *= rng.uniform(0.85, 1.15)
+    for arr in (h_conc, d_conc, e_conc):
+        arr += rng.normal(0.0, noise_sd, size=shape).astype(np.float32)
+        np.clip(arr, 0.0, None, out=arr)
+
+    rgb = render_stains(
+        {HEMATOXYLIN: h_conc, DAB: d_conc, EOSIN: e_conc},
+        _illumination(shape, rng, illumination_strength),
+    )
+    tile = Tile(
+        data=rgb,
+        mpp=mpp,
+        channels=("R", "G", "B"),
+        synthetic=True,
+        meta={"stain": "IHC (DAB, nuclear)", "seed": seed, "tile_index": tile_index},
+    )
+    return tile, labels, truths, positive
+
+
+# ---------------------------------------------------------------------------
+# mIF phantom: several fluorescent channels, cells with known phenotypes
+# ---------------------------------------------------------------------------
+
+# A small, plausible panel. DAPI marks every nucleus; the markers define
+# phenotypes. Each phenotype is a set of markers that are "on".
+MIF_CHANNELS: tuple[str, ...] = ("DAPI", "PanCK", "CD3", "CD8", "CD68")
+MIF_PHENOTYPES: dict[str, tuple[str, ...]] = {
+    "tumour": ("PanCK",),
+    "T_helper": ("CD3",),
+    "T_cytotoxic": ("CD3", "CD8"),
+    "macrophage": ("CD68",),
+    "other": (),
+}
+
+
+def generate_mif_phantom(
+    seed: int,
+    tile_index: int,
+    shape: tuple[int, int] = (256, 256),
+    mpp: float = DEFAULT_MPP,
+    n_cells: int = 80,
+    phenotype_fractions: dict[str, float] | None = None,
+    nucleus_radius_um: tuple[float, float] = (3.0, 5.0),
+    noise_sd: float = 0.03,
+) -> tuple[Tile, np.ndarray, list[NucleusTruth], list[str]]:
+    """One multichannel mIF tile with a known phenotype for every cell.
+
+    Multiplex immunofluorescence gives one picture per marker, black where the
+    marker is absent and bright where present. Here every cell gets a
+    phenotype drawn from known proportions, and each marker channel is lit in
+    the cells whose phenotype includes it (nucleus plus a small halo of
+    cytoplasm for membrane/cytoplasmic markers). DAPI lights every nucleus.
+
+    The truth is the list of phenotypes, one per cell; the biomarkers phase
+    P3 computes from this tile (density per phenotype, neighbourhood
+    enrichment) therefore have an answer key.
+    """
+    fractions = phenotype_fractions or {
+        "tumour": 0.45,
+        "T_helper": 0.15,
+        "T_cytotoxic": 0.15,
+        "macrophage": 0.10,
+        "other": 0.15,
+    }
+    if abs(sum(fractions.values()) - 1.0) > 1e-6:
+        raise ValueError("phenotype_fractions must sum to 1")
+    rng = np.random.default_rng([seed, tile_index, 2])
+    r_lo, r_hi = (r / mpp for r in nucleus_radius_um)
+    labels, truths = _place_nuclei(rng, shape, n_cells, r_lo, r_hi)
+    n = len(truths)
+
+    names = list(fractions)
+    counts = np.floor(np.array([fractions[k] for k in names]) * n).astype(int)
+    counts[0] += n - counts.sum()  # remainder to the first phenotype so counts sum to n
+    phenotypes = [name for name, c in zip(names, counts, strict=True) for _ in range(c)]
+    rng.shuffle(phenotypes)
+
+    from scipy import ndimage
+
+    stack = np.zeros((*shape, len(MIF_CHANNELS)), dtype=np.float32)
+    dapi = MIF_CHANNELS.index("DAPI")
+    for t, ph in zip(truths, phenotypes, strict=True):
+        nuc = labels == t.instance_id
+        cell = ndimage.binary_dilation(nuc, iterations=2)  # nucleus + thin cytoplasm
+        stack[nuc, dapi] = rng.uniform(0.7, 1.0)
+        for marker in MIF_PHENOTYPES[ph]:
+            stack[cell, MIF_CHANNELS.index(marker)] = rng.uniform(0.6, 1.0)
+    stack += rng.normal(0.0, noise_sd, size=stack.shape).astype(np.float32)
+    stack = np.clip(stack, 0.0, 1.0)
+
+    tile = Tile(
+        data=stack,
+        mpp=mpp,
+        channels=MIF_CHANNELS,
+        synthetic=True,
+        meta={"stain": "mIF", "seed": seed, "tile_index": tile_index, "phenotypes": list(MIF_PHENOTYPES)},
+    )
+    return tile, labels, truths, phenotypes
+
+
+# ---------------------------------------------------------------------------
+# Dataset writers for the two new phantoms (mirror generate_he_phantom_dataset)
+# ---------------------------------------------------------------------------
+
+
+def generate_ihc_phantom_dataset(
+    root: str | Path, n_tiles: int, positive_fraction: float, seed: int, **kw: Any
+) -> pd.DataFrame:
+    root = Path(root)
+    rows, cells = [], []
+    for i in range(n_tiles):
+        tile, labels, truths, positive = generate_ihc_phantom(
+            seed, i, positive_fraction=positive_fraction, **kw
+        )
+        tid = f"ihc_phantom_{i:03d}"
+        save_tile(tile, root / "images" / f"{tid}.png")
+        save_label_tile(labels, tile.mpp, root / "labels" / f"{tid}.png", synthetic=True)
+        rows.append(
+            {
+                "tile_id": tid,
+                "n_nuclei_true": len(truths),
+                "n_positive_true": int(positive.sum()),
+                "positive_fraction_true": float(positive.mean()),
+                "mpp": tile.mpp,
+                "stain": "IHC",
+                "synthetic": True,
+                "seed": seed,
+            }
+        )
+        for t, pos in zip(truths, positive, strict=True):
+            cells.append({"tile_id": tid, "instance_id": t.instance_id, "positive": bool(pos)})
+    root.mkdir(parents=True, exist_ok=True)
+    manifest = pd.DataFrame(rows)
+    manifest.to_csv(root / "manifest.csv", index=False)
+    pd.DataFrame(cells).to_csv(root / "cells.csv", index=False)
+    return manifest
+
+
+def generate_mif_phantom_dataset(root: str | Path, n_tiles: int, seed: int, **kw: Any) -> pd.DataFrame:
+    from stableseg.pathology.io import write_ome_tiff
+
+    root = Path(root)
+    rows, cells = [], []
+    for i in range(n_tiles):
+        tile, labels, truths, phenotypes = generate_mif_phantom(seed, i, **kw)
+        tid = f"mif_phantom_{i:03d}"
+        write_ome_tiff(tile, root / "images" / f"{tid}.ome.tiff")
+        save_label_tile(labels, tile.mpp, root / "labels" / f"{tid}.png", synthetic=True)
+        row: dict[str, Any] = {
+            "tile_id": tid,
+            "n_cells_true": len(truths),
+            "mpp": tile.mpp,
+            "stain": "mIF",
+            "synthetic": True,
+            "seed": seed,
+        }
+        for ph in MIF_PHENOTYPES:
+            row[f"n_{ph}_true"] = int(sum(p == ph for p in phenotypes))
+        rows.append(row)
+        for t, ph in zip(truths, phenotypes, strict=True):
+            cells.append({"tile_id": tid, "instance_id": t.instance_id, "phenotype": ph})
+    root.mkdir(parents=True, exist_ok=True)
+    manifest = pd.DataFrame(rows)
+    manifest.to_csv(root / "manifest.csv", index=False)
+    pd.DataFrame(cells).to_csv(root / "cells.csv", index=False)
     return manifest

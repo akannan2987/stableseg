@@ -236,7 +236,8 @@ Data flows **one way** (top to bottom in the diagram) and no step edits its own 
 | 1 · 1b · 1c | shared | `04-phase-tutorials/phase-01-skeleton.md`, `01-setup-r.md`, `phase-01c-first-release.md` | the layering, config, storage, I/O, MRI phantoms (box 1), R toolchain, first release |
 | P1a | P | `phase-P1a-he-phantom.md` | box 1 (synthetic H&E phantom) |
 | V2 | V | `phase-V2-real-data.md` | box 1 (MSD + DICOM) |
-| P1 | P | `phase-P1-pathology-data.md` | box 1 (WSI, OME-TIFF, AnnData, IHC/mIF phantoms, data cards), shared geometry base |
+| P1 | P | `phase-P1-pathology-data.md` | box 1 (IHC/mIF phantoms, OME-TIFF, pyramidal TIFF, OpenSlide reader), shared geometry base, the `[pathology]` extra |
+| P1b | P | `phase-P1b-real-slides.md` | box 1 (a real slide streamed, spatial-transcriptomics reader, pathology dataset registry) |
 | V3 | V | `phase-V3-mri-perturbation-bank.md` | box 3 |
 | P2 | P | `phase-P2-pathology-perturbation-bank.md` | box 3, validated on PLISM |
 | V4 | V | `phase-V4-segment-and-measure.md` | boxes 2, 4, 5, 6 |

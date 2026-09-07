@@ -65,20 +65,48 @@ class HEPhantomSpec(BaseModel):
         return v
 
 
+class IHCPhantomSpec(BaseModel):
+    """Synthetic immunohistochemistry tiles: a known fraction of nuclei stained positive."""
+
+    n_tiles: int = Field(default=8, ge=1, le=500)
+    shape: tuple[int, int] = Field(default=(256, 256))
+    mpp: float = Field(default=0.5, gt=0.0)
+    n_nuclei: int = Field(default=60, ge=1, le=2000)
+    positive_fraction: float = Field(default=0.35, ge=0.0, le=1.0, description="The biomarker's known truth.")
+    nucleus_radius_um: tuple[float, float] = Field(default=(3.0, 6.0))
+    illumination_strength: float = Field(default=0.08, ge=0.0)
+    noise_sd: float = Field(default=0.02, ge=0.0)
+    seed: int = Field(default=42)
+
+
+class MIFPhantomSpec(BaseModel):
+    """Synthetic multiplex-immunofluorescence tiles: every cell has a known phenotype."""
+
+    n_tiles: int = Field(default=8, ge=1, le=500)
+    shape: tuple[int, int] = Field(default=(256, 256))
+    mpp: float = Field(default=0.5, gt=0.0)
+    n_cells: int = Field(default=80, ge=1, le=2000)
+    nucleus_radius_um: tuple[float, float] = Field(default=(3.0, 5.0))
+    noise_sd: float = Field(default=0.03, ge=0.0)
+    seed: int = Field(default=42)
+
+
 class DataSpec(BaseModel):
     """Where the images come from."""
 
-    source: Literal["phantom", "nifti_folder", "he_phantom"] = Field(
+    source: Literal["phantom", "nifti_folder", "he_phantom", "ihc_phantom", "mif_phantom"] = Field(
         default="phantom",
         description=(
             "'phantom' generates MRI phantoms; 'nifti_folder' reads real NIfTI files "
             "(this project's images/labels layout or the Decathlon imagesTr/labelsTr layout); "
-            "'he_phantom' generates synthetic H&E tiles (Track P)."
+            "'he_phantom', 'ihc_phantom' and 'mif_phantom' generate synthetic pathology tiles (Track P)."
         ),
     )
     root: Path = Field(default=Path("data/phantom"), description="Folder holding images/ and labels/.")
     phantom: PhantomSpec = Field(default_factory=PhantomSpec)
     he_phantom: HEPhantomSpec = Field(default_factory=HEPhantomSpec)
+    ihc_phantom: IHCPhantomSpec = Field(default_factory=IHCPhantomSpec)
+    mif_phantom: MIFPhantomSpec = Field(default_factory=MIFPhantomSpec)
 
 
 class OutputSpec(BaseModel):

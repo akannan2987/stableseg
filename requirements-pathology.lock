@@ -1,0 +1,50 @@
+# requirements-pathology.lock - exact pins for the optional [pathology] extra.
+#
+# What this is: the packages the pathology extra adds ON TOP of
+# requirements.lock, pinned to the exact versions that were resolved in a
+# clean environment on the date below. Install both files:
+#
+#     python -m pip install -r requirements.lock -r requirements-pathology.lock
+#
+# Why a separate file: the core audit engine must install light (no slide
+# readers, no HDF5, no zarr). Anyone who never touches Track P never installs
+# these. Keeping them apart also keeps the core lock byte-identical between
+# someone with the extra and someone without.
+#
+# How it was made (and how to remake it - never from a working environment,
+# which may carry tools such as matplotlib that are not dependencies):
+#
+#     python -m venv /tmp/lockenv && source /tmp/lockenv/bin/activate
+#     python -m pip install -r requirements.lock
+#     python -m pip freeze --exclude-editable | sort > /tmp/core.txt
+#     python -m pip install "stableseg[pathology]" --no-deps  # or the six names in pyproject
+#     python -m pip install openslide-python openslide-bin tifffile imagecodecs zarr anndata
+#     python -m pip freeze --exclude-editable | sort > /tmp/all.txt
+#     comm -13 /tmp/core.txt /tmp/all.txt     # -> the lines below
+#
+# The comm step guarantees that no core pin changed; if it prints anything
+# from the core, the extra is fighting the core and the conflict must be
+# resolved in pyproject.toml, not papered over here.
+#
+# Platform note: openslide-bin is a native library shipped as a wheel for
+# Windows 10+, macOS 11+ and Linux with glibc >= 2.28 (RHEL 8 qualifies with
+# a current pip: `python -m pip install --upgrade pip` first). The version
+# pin is identical on all three; only the wheel file differs.
+#
+# Resolved: 2026-09-06, Python 3.12, from requirements.lock of the same date.
+anndata==0.13.3.post0
+array-api-compat==1.15.0
+donfig==0.8.1.post1
+google-crc32c==1.8.0
+h5py==3.16.0
+imagecodecs==2026.8.16
+legacy-api-wrap==1.5
+natsort==8.4.0
+numcodecs==0.16.5
+openslide-bin==4.0.1.2
+openslide-python==1.4.6
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
+scverse-misc==0.1.4
+session-info2==0.4.2
+zarr==3.3.0

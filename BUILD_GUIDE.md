@@ -64,7 +64,7 @@ the document is wrong and that is a defect worth fixing immediately.
 7d. [Two tracks, one spine — how the rest is organised](#7d-two-tracks-one-spine--how-the-rest-is-organised)
 7e. [Phase P1a — the synthetic H&E phantom ✅](#7e-phase-p1a--the-synthetic-he-phantom-)
 8. [Phase V2 — real MRI data ✅](#8-phase-v2--real-mri-data-)
-8b. [Phase P1 — pathology data and I/O ⬜](#8b-phase-p1--pathology-data-and-io-)
+8b. [Phase P1 — pathology data and I/O ✅ (P1b pending)](#8b-phase-p1--pathology-data-and-io--p1b-pending)
 9. [Phase V3 — the MRI perturbation bank ⬜](#9-phase-v3--the-mri-perturbation-bank-)
 9b. [Phase P2 — the pathology perturbation bank ⬜](#9b-phase-p2--the-pathology-perturbation-bank-)
 10. [Phase V4 — segment, measure, store ⬜](#10-phase-v4--segment-measure-store-)
@@ -532,7 +532,7 @@ stableseg phantom
 stableseg describe data/phantom/images/phantom_000.nii.gz
 ```
 
-Expected, in order: `74 passed`, then `{ "stableseg": "0.1.0" }`, then a block
+Expected, in order: `92 passed`, then `{ "stableseg": "0.1.0" }`, then a block
 containing `"mean_true_volume_mm3": 2269.75`, then a description of one file.
 
 Taking the third one on its own:
@@ -687,7 +687,7 @@ The frame everything else hangs on. Nothing here measures a hippocampus.
 - **File loading** that never separates the numbers from their physical size
 - A **phantom generator**, so tests need no download
 - A **command-line tool** and a **function layer** underneath it
-- **74 automated checks**, running in under a second
+- **92 automated checks**, running in under a second
 - **Automated verification** on six platform combinations, on every push
 
 ### Why this first, and not the interesting part
@@ -720,7 +720,7 @@ automated verification does on every push.
 ### How you know it worked
 
 ```bash
-pytest -q                        # 74 passed
+pytest -q                        # 92 passed
 stableseg phantom                # mean_true_volume_mm3: 2269.75
 python scripts/preflight.py      # Clear to commit and push.
 ```
@@ -951,7 +951,7 @@ flowchart LR
 tracks, and every artefact — this guide, the README, the glossary, the
 roadmap, the checks, the explorer, the report — gives them equal weight.
 
-**The order, in one line.** V2 → P1 → V3 → P2 → V4 → P3 → **S1 (0.2.0)** →
+**The order, in one line.** V2 → P1 → P1b → V3 → P2 → V4 → P3 → **S1 (0.2.0)** →
 V6 → P4 → P5 → P6 → P7 → **S2 → S3 (0.3.0)** → 0.4.0. The dependency reasoning
 is in [`docs/05-roadmap.md`](docs/05-roadmap.md) section 4; the honest
 estimate is about twenty-nine weekends to 0.3.0.
@@ -1000,7 +1000,7 @@ file explained, and the checks.
 
 ```bash
 stableseg he-phantom             # ends with: "mean_nuclear_area_um2": 2950.875
-pytest -q                        # 74 passed
+pytest -q                        # 92 passed
 ```
 
 `2950.875` is Track P's checkpoint, the twin of Track V's `2269.75`: the mean
@@ -1077,7 +1077,7 @@ from one file per slice to a volume, and the checks.
 stableseg fetch msd_task04_hippocampus       # ends with "MD5 verified"
 stableseg dataset-summary data/Task04_Hippocampus
 python scripts/make_figures.py               # writes docs/img/msd_hippocampus_case.png
-pytest -q                                    # 74 passed
+pytest -q                                    # 92 passed
 ```
 
 ![A real hippocampus MRI in three views with the expert outline](docs/img/msd_hippocampus_case.png)
@@ -1106,39 +1106,87 @@ git switch develop
 
 ---
 
-## 8b. Phase P1 — pathology data and I/O ⬜
+## 8b. Phase P1 — pathology data and I/O ✅ (P1b pending)
+
+**Status: built, in two halves.** P1 (this section) is done; **P1b** — the
+real slide streamed through the same reader, the spatial-transcriptomics
+reader, and the registry entries for the pathology datasets — is the next
+Track P phase. Split so each half is tested to the standard.
 
 ### What it is
 
-The shared geometry base, `image.py`, so a 2-D RGB tile, a multichannel
-OME-TIFF and a 3-D volume all carry their geometry — microns per pixel or
-voxel spacing, magnification level, channel names — and no function can
-separate the numbers from it. `Volume` keeps its name and import path, so the
-existing checks are untouched. Readers for whole-slide formats (OpenSlide,
-installed as a self-contained pip package on all three systems), pyramidal
-and OME-TIFF (tifffile), and spatial-transcriptomics tables (AnnData). The
-synthetic IHC channel with known positive fraction and the synthetic mIF
-phantom with known phenotype proportions, completing the phantom family
-begun in P1a. Download scripts and [data cards](docs/data-cards/README.md)
-for every real dataset. One real whole-slide image streamed as tiles.
+The shared geometry base, `image.py`: one contract — a `spacing` in a stated
+`unit`, a synthetic flag, a shared description — that both `Volume` and
+`Tile` now inherit, with neither changing its name, fields or import path.
+Two more phantoms with known truths: **IHC** (a set fraction of nuclei stained
+brown; the positive fraction is the truth) and **mIF** (five named channels;
+every cell's phenotype is the truth), the second written as OME-TIFF with
+its channel names and microns-per-pixel inside the file. A pyramidal-TIFF
+writer and an **OpenSlide** reader that streams tissue tiles from a whole
+slide without ever loading it — tested on a slide built from the H&E
+phantom, because OpenSlide reads that file through the same path it uses for
+scanner exports. The optional **`[pathology]` extra**, with its own lock file
+resolved in a clean environment, installed by the automated checks on all six
+platform combinations.
 
 ### Why here
 
-You cannot write a realistic stain disturbance without a real tile to
-disturb. And the geometry rule must exist before any pathology number is
-computed, or the first magnification mix-up silently corrupts a result.
+You cannot write a realistic stain disturbance without real tiles to disturb
+(P1b brings them). And the geometry rule must exist before any pathology
+number is computed, or the first magnification mix-up silently corrupts a
+result. Everything downstream on Track P reads tiles through this layer.
 
 ### What you will understand afterwards
 
-What a whole-slide image is and why nobody loads all of it. What a pyramid
-is. What microns-per-pixel means and why it is the pathology voxel spacing.
-What the `[pathology]` extra installs and why the core stays light.
+What an optional extra is and why the core stays light. What
+immunohistochemistry and multiplex immunofluorescence show, and what a
+positive fraction and a phenotype are. What an OME-TIFF carries. What a
+whole-slide image is, why nobody loads all of it, and what a pyramid is. Why
+microns-per-pixel is the pathology voxel spacing.
 
 ### 🔗 The detail
 
-`docs/04-phase-tutorials/phase-P1-pathology-data.md` — arrives with the phase.
-Setup additions for the pathology extra go into all three OS guides, with the
-platform differences called out.
+[`docs/04-phase-tutorials/phase-P1-pathology-data.md`](docs/04-phase-tutorials/phase-P1-pathology-data.md)
+— the contract, both phantoms, OME-TIFF, the extra and its lock, and the
+slide reader, each from zero. Installing the extra is a new section in every
+OS setup guide.
+
+### How you know it worked
+
+```bash
+python -m pip install -r requirements-pathology.lock
+stableseg ihc-phantom            # "mean_positive_fraction_true": 0.35
+stableseg mif-phantom            # "tumour": 36.0 ... "macrophage": 8.0
+pytest -q                        # 92 passed
+```
+
+![IHC and mIF phantoms with their known truths](docs/img/pathology_phantoms.png)
+
+*Two more answer keys: the IHC phantom's positive fraction, recovered from
+the picture by colour deconvolution; the mIF phantom's five channels with
+every cell's phenotype known.*
+
+![A synthetic slide, its tissue mask, the selected tiles, one streamed tile](docs/img/synthetic_slide.png)
+
+*Whole-slide handling: a slide built from the phantom, read back through
+OpenSlide with a four-level pyramid; the tissue mask; 48 tiles selected with
+glass skipped; one streamed tile carrying its geometry.*
+
+### Commit it
+
+```bash
+git switch develop
+git add -A
+git commit -m "phase P1: shared geometry base, IHC and mIF phantoms, OME-TIFF and pyramidal TIFF I/O, OpenSlide reader, pathology extra with lock"
+git push origin develop develop:beta develop:master
+
+## --tags is optional, only when required
+## then switch back to local master and pull in the remote changes
+
+git switch master
+git pull --ff-only origin master
+git switch develop
+```
 
 ---
 
